@@ -1345,33 +1345,31 @@ h3 {
   margin-top: 4px;
 }
 
-.auth-tabs {
-  display: flex;
-  background: var(--surface-subtle);
-  border-radius: var(--radius);
-  padding: 3px;
-  margin-bottom: 20px;
-  gap: 2px;
-}
-
-.auth-tab-btn {
-  flex: 1;
-  padding: 8px 12px;
-  border: none;
-  background: transparent;
-  font-family: var(--font-sans);
-  font-size: 13px;
+.auth-security-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  color: #166534;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 11.5px;
   font-weight: 600;
-  color: var(--text-muted);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.15s ease;
+  margin: 0 auto 18px auto;
+  letter-spacing: 0.02em;
 }
 
-.auth-tab-btn.active {
-  background: var(--surface);
-  color: var(--primary);
-  box-shadow: var(--shadow-sm);
+.auth-restricted-note {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  text-align: center;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  margin-top: 14px;
 }
 
 .auth-error {

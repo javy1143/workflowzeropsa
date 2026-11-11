@@ -2373,50 +2373,23 @@
     // -----------------------------------------------------------------------
     // FIREBASE AUTHENTICATION & LOGIN UI
     // -----------------------------------------------------------------------
-    let isRegisterMode = false;
-
-    const authTabSignIn = document.getElementById('authTabSignIn');
-    const authTabRegister = document.getElementById('authTabRegister');
-    const authNameGroup = document.getElementById('authNameGroup');
+    // Technician Sign-In Form (Self-registration is disabled)
+    // -----------------------------------------------------------------------
     const authSubmitBtn = document.getElementById('authSubmitBtn');
     const authError = document.getElementById('authErrorMessage');
-
-    authTabSignIn?.addEventListener('click', () => {
-      isRegisterMode = false;
-      authTabSignIn.classList.add('active');
-      authTabRegister.classList.remove('active');
-      authNameGroup.classList.add('hidden');
-      authSubmitBtn.textContent = 'Sign In to PSA';
-      if (authError) { authError.className = 'auth-error'; authError.textContent = ''; }
-    });
-
-    authTabRegister?.addEventListener('click', () => {
-      isRegisterMode = true;
-      authTabRegister.classList.add('active');
-      authTabSignIn.classList.remove('active');
-      authNameGroup.classList.remove('hidden');
-      authSubmitBtn.textContent = 'Create Technician Account';
-      if (authError) { authError.className = 'auth-error'; authError.textContent = ''; }
-    });
 
     document.getElementById('authForm')?.addEventListener('submit', async e => {
       e.preventDefault();
       const email = document.getElementById('authEmailInput')?.value.trim();
       const password = document.getElementById('authPasswordInput')?.value;
-      const displayName = document.getElementById('authNameInput')?.value.trim();
 
       if (authError) { authError.className = 'auth-error'; authError.textContent = ''; }
       authSubmitBtn.disabled = true;
-      authSubmitBtn.textContent = isRegisterMode ? 'Creating Account...' : 'Signing In...';
+      authSubmitBtn.textContent = 'Authenticating...';
 
       try {
-        if (isRegisterMode) {
-          await window.FirebaseService.signUp(email, password, displayName);
-          showToast(`Technician account registered: ${email}`);
-        } else {
-          await window.FirebaseService.signIn(email, password);
-          showToast(`Welcome back, ${email}`);
-        }
+        await window.FirebaseService.signIn(email, password);
+        showToast(`Welcome back, ${email}`);
       } catch (err) {
         if (authError) {
           authError.textContent = err.message || 'Authentication error. Please check your credentials.';
@@ -2424,7 +2397,7 @@
         }
       } finally {
         authSubmitBtn.disabled = false;
-        authSubmitBtn.textContent = isRegisterMode ? 'Create Technician Account' : 'Sign In to PSA';
+        authSubmitBtn.textContent = 'Sign In to PSA';
       }
     });
 

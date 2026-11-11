@@ -207,17 +207,31 @@
 
     // 1. If Firebase Auth is initialized and configured
     if (authInstance && isConfigured()) {
-      const cred = await authInstance.signInWithEmailAndPassword(email.trim(), password);
-      const user = cred.user;
-      currentAuthUser = {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName || user.email.split('@')[0],
-        isFirebase: true
-      };
-      localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(currentAuthUser));
-      notifyAuthListeners(currentAuthUser);
-      return currentAuthUser;
+      try {
+        const cred = await authInstance.signInWithEmailAndPassword(email.trim(), password);
+        const user = cred.user;
+        currentAuthUser = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || user.email.split('@')[0],
+          isFirebase: true
+        };
+        localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(currentAuthUser));
+        notifyAuthListeners(currentAuthUser);
+        return currentAuthUser;
+      } catch (err) {
+        let msg = err.message;
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+          msg = 'Technician account not found or invalid credentials. Ensure your account has been provisioned by an administrator.';
+        } else if (err.code === 'auth/wrong-password') {
+          msg = 'Incorrect password. Please verify your password or contact your administrator to reset it.';
+        } else if (err.code === 'auth/user-disabled') {
+          msg = 'This technician account has been deactivated by an administrator.';
+        } else if (err.code === 'auth/too-many-requests') {
+          msg = 'Access temporarily locked due to multiple failed login attempts. Please wait a few minutes and try again.';
+        }
+        throw new Error(msg);
+      }
     }
 
     // 2. Local / Offline Mode Sign-In
@@ -235,45 +249,8 @@
   }
 
   async function signUp(email, password, displayName) {
-    if (!email || !password) {
-      throw new Error('Please enter both an email address and password.');
-    }
-
-    if (password.length < 6) {
-      throw new Error('Password must be at least 6 characters.');
-    }
-
-    // 1. Firebase Auth Sign Up
-    if (authInstance && isConfigured()) {
-      const cred = await authInstance.createUserWithEmailAndPassword(email.trim(), password);
-      const user = cred.user;
-      const name = displayName?.trim() || email.split('@')[0];
-      try {
-        await user.updateProfile({ displayName: name });
-      } catch (e) {}
-
-      currentAuthUser = {
-        uid: user.uid,
-        email: user.email,
-        displayName: name,
-        isFirebase: true
-      };
-      localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(currentAuthUser));
-      notifyAuthListeners(currentAuthUser);
-      return currentAuthUser;
-    }
-
-    // 2. Local / Offline Mode Sign-Up
-    const name = displayName?.trim() || email.split('@')[0];
-    currentAuthUser = {
-      uid: 'local-' + Date.now(),
-      email: email.trim(),
-      displayName: name,
-      isFirebase: false
-    };
-    localStorage.setItem(STORAGE_KEY_AUTH_USER, JSON.stringify(currentAuthUser));
-    notifyAuthListeners(currentAuthUser);
-    return currentAuthUser;
+    // Public account self-registration is explicitly disabled by security policy
+    throw new Error('Public self-registration is disabled. Technician accounts must be provisioned by a Workflow Zero IT administrator.');
   }
 
   async function signOut() {

@@ -950,45 +950,45 @@
     </div>
   </div>
 
-  <!-- AUTHENTICATION SCREEN (LOGIN & TECHNICIAN REGISTER) -->
+  <!-- AUTHENTICATION SCREEN (LOGIN PORTAL) -->
   <div class="auth-screen hidden" id="authScreen">
     <div class="auth-card">
       <div class="auth-brand">
         <img src="logo.png" alt="Workflow Zero IT Logo" class="auth-logo-img" />
         <h1 class="auth-title">Workflow Zero <span class="brand-accent">IT</span></h1>
-        <p class="auth-subtitle">Cloud-Connected PSA Client &amp; Service Portal</p>
+        <p class="auth-subtitle">Service Desk &amp; PSA Technician Portal</p>
       </div>
 
-      <div class="auth-tabs" role="tablist">
-        <button type="button" class="auth-tab-btn active" id="authTabSignIn">Sign In</button>
-        <button type="button" class="auth-tab-btn" id="authTabRegister">Register Technician</button>
+      <div class="auth-security-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span>Authorized Technicians Only</span>
       </div>
 
       <div id="authErrorMessage" class="auth-error"></div>
 
       <form id="authForm" class="stack-sm">
-        <div id="authNameGroup" class="hidden">
-          <label class="label">Technician Full Name</label>
-          <input type="text" id="authNameInput" class="input full-width" placeholder="Javier Mendez — Lead Tech" />
-        </div>
-
         <div>
-          <label class="label">Email Address</label>
-          <input type="email" id="authEmailInput" class="input full-width" placeholder="technician@workflowzero.it" required />
+          <label class="label">Technician Email</label>
+          <input type="email" id="authEmailInput" class="input full-width" placeholder="technician@workflowzero.it" required autocomplete="username" />
         </div>
 
         <div>
           <label class="label">Password</label>
-          <input type="password" id="authPasswordInput" class="input full-width" placeholder="••••••••" required />
+          <input type="password" id="authPasswordInput" class="input full-width" placeholder="••••••••" required autocomplete="current-password" />
         </div>
 
         <button type="submit" class="btn btn-primary full-width" id="authSubmitBtn" style="margin-top: 8px; padding: 10px;">Sign In to PSA</button>
       </form>
 
+      <div class="auth-restricted-note">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -1px; margin-right: 4px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        Public account creation is disabled. All technician accounts must be provisioned by your system administrator.
+      </div>
+
       <div class="auth-footer">
-        <div class="auth-cloud-badge" id="authCloudSettingsLink" title="Click to configure Firebase">
+        <div class="auth-cloud-badge" id="authCloudSettingsLink" title="Click to view Firebase status">
           <span class="cloud-status-dot setup" id="authCloudDot"></span>
-          <span id="authCloudStatusText">Firebase: Configure Cloud Database</span>
+          <span id="authCloudStatusText">Firebase: workflowzero-psa-app</span>
         </div>
         <button type="button" class="btn-link" id="authQuickDemoBtn" style="font-size: 12px;">Continue with Offline / Local Demo Account &rarr;</button>
       </div>

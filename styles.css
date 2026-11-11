@@ -45,6 +45,12 @@
   padding: 0;
 }
 
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -1281,9 +1287,447 @@ h3 {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
 }
 
+/* ==========================================================================
+   RESPONSIVE DESIGN (TABLETS, PHONES & TOUCH DEVICES)
+   ========================================================================== */
+
 @media (max-width: 1024px) {
-  .stats-row { grid-template-columns: repeat(2, 1fr); }
-  .grid-2, .ticket-detail-grid, .dispatch-layout, .kb-layout { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: repeat(2, 1fr) !important; }
+  .grid-2, .ticket-detail-grid, .dispatch-layout, .kb-layout { grid-template-columns: 1fr !important; }
+  .container { width: 98%; padding: 20px 16px 40px; }
+}
+
+@media (max-width: 768px) {
+  /* Topbar Mobile Layout: 2-Row Stack with Swipeable Nav */
+  .topbar {
+    height: auto;
+    min-height: 56px;
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .topbar-left {
+    width: auto;
+    gap: 10px;
+    order: 1;
+    flex: 1;
+  }
+
+  .brand {
+    gap: 8px;
+  }
+
+  .brand-img {
+    height: 28px;
+  }
+
+  .brand-name {
+    font-size: 14.5px;
+  }
+
+  .topbar-right {
+    order: 2;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  /* Swipable Tab Strip */
+  .nav-tabs {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 6px 0 2px;
+    margin-top: 2px;
+    border-top: 1px solid var(--border);
+    gap: 6px;
+    display: flex;
+  }
+
+  .nav-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-tab {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    white-space: nowrap;
+    border-radius: 9999px;
+  }
+
+  /* Compact Timer Pill on Mobile */
+  .header-timer {
+    padding: 4px 8px;
+    gap: 6px;
+    flex-shrink: 1;
+    overflow: hidden;
+  }
+
+  .timer-ticket {
+    max-width: 80px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 11.5px;
+  }
+
+  .timer-readout {
+    font-size: 12px;
+    min-width: 50px;
+  }
+
+  .user-pill {
+    padding: 2px 6px;
+  }
+
+  .user-meta {
+    display: none; /* Hide technician name & email text on mobile to avoid overcrowding */
+  }
+
+  #headerNewTicketBtn {
+    padding: 6px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  /* Mobile Container */
+  .container {
+    width: 100%;
+    padding: 12px 10px 48px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .page-header h1 {
+    font-size: 20px;
+  }
+
+  .page-header p {
+    font-size: 12.5px;
+  }
+
+  /* Dashboard Stats */
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .stat-card {
+    padding: 12px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
+
+  .stat-label {
+    font-size: 11.5px;
+  }
+
+  /* Grids and Panels */
+  .grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .panel {
+    padding: 14px 12px;
+    border-radius: var(--radius);
+  }
+
+  .panel.flush {
+    padding: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .panel-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .panel-header h2, .panel-header h3 {
+    font-size: 15px;
+  }
+
+  /* Filter Bar & Controls */
+  .filter-bar, .controls-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .search-input {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .seg-group {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    display: flex;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .seg-group::-webkit-scrollbar {
+    display: none;
+  }
+
+  .seg-btn {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .filters-wrap {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .filters-wrap .select {
+    width: 100%;
+  }
+
+  /* Tables: smooth horizontal scroll on touch */
+  .clean-list-table, .queue-table {
+    min-width: 640px;
+  }
+
+  .info-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Ticket Detail View */
+  .detail-nav {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ticket-header-panel {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .ticket-title {
+    font-size: 17px;
+  }
+
+  .ticket-client-line {
+    font-size: 12px;
+    flex-wrap: wrap;
+  }
+
+  .ticket-header-controls {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .ticket-header-controls .field-inline {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 4px;
+  }
+
+  .ticket-header-controls .select {
+    width: 100%;
+  }
+
+  .ticket-detail-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .note-actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .note-actions-bar .btn {
+    width: 100%;
+  }
+
+  .manual-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .manual-row input, .manual-row button {
+    width: 100% !important;
+  }
+
+  .timer-big-clock {
+    font-size: 24px;
+  }
+
+  /* Clients View & MSP Dossier */
+  .msp-dossier-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .client-hero-title-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .client-hero-title {
+    font-size: 18px;
+  }
+
+  .client-hero-meta-grid {
+    grid-template-columns: 1fr !important;
+    gap: 6px;
+  }
+
+  .edit-grid-3, .edit-grid-2, .row-2 {
+    grid-template-columns: 1fr !important;
+    gap: 8px;
+  }
+
+  .subnets-edit-row {
+    flex-direction: column;
+    gap: 6px;
+    background: var(--surface-subtle);
+    padding: 10px;
+    border-radius: var(--radius);
+  }
+
+  .subnets-edit-row .input {
+    width: 100% !important;
+  }
+
+  .btn-del-subnet {
+    align-self: flex-end;
+  }
+
+  .assets-metric-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  /* Dispatch Board */
+  .dispatch-layout {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .dispatch-calendar-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dispatch-grid {
+    min-width: 580px;
+  }
+
+  /* Knowledge Base */
+  .kb-layout {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  /* Modals on Mobile Devices */
+  .modal-backdrop {
+    padding: 10px;
+    align-items: center;
+  }
+
+  .modal, .modal-lg {
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: 90vh;
+    padding: 18px 14px;
+    border-radius: 12px;
+    margin: auto;
+    overflow-y: auto;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+    padding: 10px;
+  }
+
+  /* iOS Safari Auto-Zoom Fix */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar-left {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .brand-name {
+    font-size: 13px;
+  }
+
+  .header-timer .timer-ticket {
+    display: none;
+  }
+
+  .topbar-right {
+    gap: 6px;
+  }
+
+  #headerNewTicketBtn {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+
+  .stats-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .ticket-header-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-card {
+    padding: 24px 16px;
+  }
+
+  .auth-title {
+    font-size: 18px;
+  }
+
+  .auth-logo-img {
+    height: 42px;
+  }
+
+  .assets-metric-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ==========================================================================

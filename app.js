@@ -840,15 +840,16 @@
           <div class="edit-grid-3">
             <div class="form-group">
               <label>Organization Name</label>
-              <input type="text" id="editHeroName" class="input" value="${escapeHtml(client.name)}" required />
+              <input type="text" id="editHeroName" class="input" value="${escapeHtml(client.name || '')}" required />
             </div>
             <div class="form-group">
               <label>Industry</label>
-              <input type="text" id="editHeroIndustry" class="input" value="${escapeHtml(client.industry || '')}" />
+              <input type="text" id="editHeroIndustry" class="input" value="${escapeHtml(client.industry || '')}" placeholder="e.g. Healthcare, Legal, Tech" />
             </div>
             <div class="form-group">
               <label>SLA Agreement Tier</label>
               <select id="editHeroSlaTier" class="select full-width">
+                <option value="" ${!client.slaTier ? 'selected' : ''}>None / Unassigned</option>
                 <option value="24/7 Zero-Trust Enterprise" ${client.slaTier === '24/7 Zero-Trust Enterprise' ? 'selected' : ''}>24/7 Zero-Trust Enterprise</option>
                 <option value="Managed Core Plus" ${client.slaTier === 'Managed Core Plus' ? 'selected' : ''}>Managed Core Plus</option>
                 <option value="Co-Managed Infrastructure" ${client.slaTier === 'Co-Managed Infrastructure' ? 'selected' : ''}>Co-Managed Infrastructure</option>
@@ -859,33 +860,33 @@
           <div class="edit-grid-3">
             <div class="form-group">
               <label>Primary Contact Name &amp; Title</label>
-              <input type="text" id="editHeroContactName" class="input" value="${escapeHtml(client.contactName || (client.primaryContact && client.primaryContact.name) || '')}" required />
+              <input type="text" id="editHeroContactName" class="input" value="${escapeHtml(client.contactName || (client.primaryContact && client.primaryContact.name) || '')}" placeholder="Full name &amp; title" />
             </div>
             <div class="form-group">
               <label>Primary Contact Email</label>
-              <input type="email" id="editHeroContactEmail" class="input" value="${escapeHtml(client.contactEmail || (client.primaryContact && client.primaryContact.email) || '')}" required />
+              <input type="email" id="editHeroContactEmail" class="input" value="${escapeHtml(client.contactEmail || (client.primaryContact && client.primaryContact.email) || '')}" placeholder="Email address" />
             </div>
             <div class="form-group">
               <label>Phone</label>
-              <input type="text" id="editHeroPhone" class="input" value="${escapeHtml(client.phone || '')}" />
+              <input type="text" id="editHeroPhone" class="input" value="${escapeHtml(client.phone || '')}" placeholder="Phone number" />
             </div>
           </div>
           <div class="form-group">
             <label>Office Address</label>
-            <input type="text" id="editHeroAddress" class="input" value="${escapeHtml(client.address || '')}" />
+            <input type="text" id="editHeroAddress" class="input" value="${escapeHtml(client.address || '')}" placeholder="Office address" />
           </div>
           <div class="edit-grid-3">
             <div class="form-group">
               <label>Monthly Retainer ($ MRR)</label>
-              <input type="number" id="editHeroMrr" class="input" value="${client.mrr || 7500}" required />
+              <input type="number" id="editHeroMrr" class="input" value="${client.mrr ?? ''}" placeholder="0" min="0" />
             </div>
             <div class="form-group">
               <label>Billable Hourly Rate ($/hr)</label>
-              <input type="number" id="editHeroRate" class="input" value="${client.hourlyRate || 175}" required />
+              <input type="number" id="editHeroRate" class="input" value="${client.hourlyRate ?? ''}" placeholder="0" min="0" />
             </div>
             <div class="form-group">
               <label>Contract Renewal Date</label>
-              <input type="text" id="editHeroRenewal" class="input" value="${escapeHtml(client.contractRenewal || 'Oct 31, 2027')}" />
+              <input type="text" id="editHeroRenewal" class="input" value="${escapeHtml(client.contractRenewal || '')}" placeholder="e.g. Oct 31, 2027" />
             </div>
           </div>
           <div class="card-edit-actions">
@@ -895,21 +896,27 @@
         </form>
       `;
     } else {
+      const contactStr = client.contactName
+        ? `${escapeHtml(client.contactName)}${client.contactEmail ? ` (${escapeHtml(client.contactEmail)})` : ''}`
+        : (client.contactEmail ? escapeHtml(client.contactEmail) : '—');
+      const mrrStr = client.mrr ? `$${Number(client.mrr).toLocaleString()}/mo` : '$0/mo';
+      const rateStr = client.hourlyRate ? `$${client.hourlyRate}/hr` : '$0/hr';
+
       container.innerHTML = `
         <div style="flex: 1; min-width: 320px;">
           <div class="client-hero-title-row">
             <span class="client-hero-title">${escapeHtml(client.name)}</span>
-            <span class="badge badge-open">${escapeHtml(client.slaTier || '24/7 Managed')}</span>
-            <span class="badge badge-teal">${escapeHtml(client.industry || 'Enterprise')}</span>
+            ${client.slaTier ? `<span class="badge badge-open">${escapeHtml(client.slaTier)}</span>` : '<span class="badge" style="background:var(--surface-subtle);color:var(--text-muted);">No SLA Tier</span>'}
+            ${client.industry ? `<span class="badge badge-teal">${escapeHtml(client.industry)}</span>` : ''}
           </div>
-          <div class="text-muted" style="font-size: 13.5px;">${escapeHtml(client.address || 'Corporate Headquarters')}</div>
+          <div class="text-muted" style="font-size: 13.5px;">${escapeHtml(client.address || '—')}</div>
 
           <div class="client-hero-meta-grid">
-            <div><strong>Primary Contact:</strong> ${escapeHtml(client.contactName)} (${escapeHtml(client.contactEmail)})</div>
+            <div><strong>Primary Contact:</strong> ${contactStr}</div>
             <div><strong>Phone:</strong> ${escapeHtml(client.phone || '—')}</div>
-            <div><strong>Retainer:</strong> $${(client.mrr || 7500).toLocaleString()}/mo</div>
-            <div><strong>Hourly Rate:</strong> $${client.hourlyRate}/hr</div>
-            <div><strong>Renewal:</strong> ${escapeHtml(client.contractRenewal || 'Oct 2027')}</div>
+            <div><strong>Retainer:</strong> ${mrrStr}</div>
+            <div><strong>Hourly Rate:</strong> ${rateStr}</div>
+            <div><strong>Renewal:</strong> ${escapeHtml(client.contractRenewal || '—')}</div>
           </div>
         </div>
         <div>
@@ -932,45 +939,45 @@
           <div class="edit-grid-2">
             <div class="form-group">
               <label>Primary Firewall &amp; HA Mode</label>
-              <input type="text" id="editNetFirewall" class="input" value="${escapeHtml(net.firewall || '')}" />
+              <input type="text" id="editNetFirewall" class="input" value="${escapeHtml(net.firewall || '')}" placeholder="Firewall / Gateway" />
             </div>
             <div class="form-group">
               <label>Firewall Management IP &amp; OS</label>
-              <input type="text" id="editNetMgmtIp" class="input" value="${escapeHtml(net.firewallMgmtIp || '')}" />
+              <input type="text" id="editNetMgmtIp" class="input" value="${escapeHtml(net.firewallMgmtIp || '')}" placeholder="10.x.x.x" />
             </div>
           </div>
           <div class="edit-grid-2">
             <div class="form-group">
               <label>WAN 1 Primary ISP</label>
-              <input type="text" id="editNetWan1Isp" class="input" value="${escapeHtml(net.wan1Isp || '')}" />
+              <input type="text" id="editNetWan1Isp" class="input" value="${escapeHtml(net.wan1Isp || '')}" placeholder="Primary ISP" />
             </div>
             <div class="form-group">
               <label>WAN 1 Circuit ID &amp; Static IP</label>
-              <input type="text" id="editNetWan1Circuit" class="input" value="${escapeHtml(net.wan1Circuit || '')}" />
+              <input type="text" id="editNetWan1Circuit" class="input" value="${escapeHtml(net.wan1Circuit || '')}" placeholder="Circuit ID &amp; IP" />
             </div>
           </div>
           <div class="edit-grid-2">
             <div class="form-group">
               <label>WAN 2 Backup ISP</label>
-              <input type="text" id="editNetWan2Isp" class="input" value="${escapeHtml(net.wan2Isp || '')}" />
+              <input type="text" id="editNetWan2Isp" class="input" value="${escapeHtml(net.wan2Isp || '')}" placeholder="Backup ISP" />
             </div>
             <div class="form-group">
               <label>WAN 2 Circuit ID &amp; Static IP</label>
-              <input type="text" id="editNetWan2Circuit" class="input" value="${escapeHtml(net.wan2Circuit || '')}" />
+              <input type="text" id="editNetWan2Circuit" class="input" value="${escapeHtml(net.wan2Circuit || '')}" placeholder="Circuit ID &amp; IP" />
             </div>
           </div>
           <div class="edit-grid-3">
             <div class="form-group">
               <label>Core Switch Fabric</label>
-              <input type="text" id="editNetSwitches" class="input" value="${escapeHtml(net.coreSwitches || '')}" />
+              <input type="text" id="editNetSwitches" class="input" value="${escapeHtml(net.coreSwitches || '')}" placeholder="Switch Stack" />
             </div>
             <div class="form-group">
               <label>Corporate &amp; Guest Wi-Fi</label>
-              <input type="text" id="editNetWifi" class="input" value="${escapeHtml(net.wifi || '')}" />
+              <input type="text" id="editNetWifi" class="input" value="${escapeHtml(net.wifi || '')}" placeholder="Wi-Fi SSID &amp; Security" />
             </div>
             <div class="form-group">
               <label>VPN Gateway &amp; MFA</label>
-              <input type="text" id="editNetVpn" class="input" value="${escapeHtml(net.vpn || '')}" />
+              <input type="text" id="editNetVpn" class="input" value="${escapeHtml(net.vpn || '')}" placeholder="VPN / MFA details" />
             </div>
           </div>
           <div class="card-edit-actions">
@@ -984,15 +991,15 @@
       container.innerHTML = `
         <div class="info-table-wrap">
           <table class="key-value-table" id="clientNetworkTable">
-            <tr><td>Primary Firewall</td><td><strong>${escapeHtml(net.firewall || 'FortiGate HA Cluster')}</strong></td></tr>
-            <tr><td>Firewall MGMT IP</td><td>${escapeHtml(net.firewallMgmtIp || '10.42.0.1')}</td></tr>
-            <tr><td>WAN 1 Primary ISP</td><td>${escapeHtml(net.wan1Isp || 'Comcast Business Dedicated Fiber (1 Gbps)')}</td></tr>
-            <tr><td>WAN 1 Circuit &amp; IP</td><td>${escapeHtml(net.wan1Circuit || 'CKT-BOS-98214 (Static IP: 50.210.42.18)')}</td></tr>
-            <tr><td>WAN 2 Backup ISP</td><td>${escapeHtml(net.wan2Isp || 'Crown Castle Backup Fiber (500 Mbps)')}</td></tr>
-            <tr><td>WAN 2 Circuit &amp; IP</td><td>${escapeHtml(net.wan2Circuit || 'CKT-CC-40112 (Static IP: 64.104.88.22)')}</td></tr>
-            <tr><td>Core Switch Fabric</td><td>${escapeHtml(net.coreSwitches || 'Aruba CX 6300M 48-port Stack')}</td></tr>
-            <tr><td>Corporate Wi-Fi</td><td>${escapeHtml(net.wifi || '802.1X WPA3 Enterprise')}</td></tr>
-            <tr><td>VPN Gateway</td><td>${escapeHtml(net.vpn || 'IPSec AWS Cloud Tunnel + SAML MFA SSL-VPN')}</td></tr>
+            <tr><td>Primary Firewall</td><td><strong>${escapeHtml(net.firewall || '—')}</strong></td></tr>
+            <tr><td>Firewall MGMT IP</td><td>${escapeHtml(net.firewallMgmtIp || '—')}</td></tr>
+            <tr><td>WAN 1 Primary ISP</td><td>${escapeHtml(net.wan1Isp || '—')}</td></tr>
+            <tr><td>WAN 1 Circuit &amp; IP</td><td>${escapeHtml(net.wan1Circuit || '—')}</td></tr>
+            <tr><td>WAN 2 Backup ISP</td><td>${escapeHtml(net.wan2Isp || '—')}</td></tr>
+            <tr><td>WAN 2 Circuit &amp; IP</td><td>${escapeHtml(net.wan2Circuit || '—')}</td></tr>
+            <tr><td>Core Switch Fabric</td><td>${escapeHtml(net.coreSwitches || '—')}</td></tr>
+            <tr><td>Corporate Wi-Fi</td><td>${escapeHtml(net.wifi || '—')}</td></tr>
+            <tr><td>VPN Gateway</td><td>${escapeHtml(net.vpn || '—')}</td></tr>
           </table>
         </div>
       `;
@@ -1006,11 +1013,7 @@
     if (!container || !btn) return;
 
     client.network = client.network || {};
-    client.network.subnets = client.network.subnets || [
-      { vlan: '10', name: 'Corporate LAN', cidr: '10.42.10.0/24', dhcp: 'Windows Server DHCP' },
-      { vlan: '20', name: 'VoIP Telephony', cidr: '10.42.20.0/24', dhcp: 'FortiGate DHCP' },
-      { vlan: '50', name: 'Guest Wi-Fi', cidr: '172.16.50.0/24', dhcp: 'Captive Portal' }
-    ];
+    client.network.subnets = client.network.subnets || [];
 
     if (countBadge) countBadge.textContent = `${client.network.subnets.length} documented subnets`;
 
@@ -1018,9 +1021,9 @@
       btn.textContent = 'Editing';
       const rowsHtml = editingSubnets.map((s, idx) => `
         <div class="subnets-edit-row" data-subnet-idx="${idx}">
-          <input type="text" class="input subnet-input-vlan" placeholder="VLAN #" value="${escapeHtml(s.vlan)}" required />
-          <input type="text" class="input subnet-input-name" placeholder="Subnet Name" value="${escapeHtml(s.name)}" required />
-          <input type="text" class="input subnet-input-cidr" placeholder="Subnet CIDR (10.x.x.x/24)" value="${escapeHtml(s.cidr)}" required />
+          <input type="text" class="input subnet-input-vlan" placeholder="VLAN #" value="${escapeHtml(s.vlan || '')}" />
+          <input type="text" class="input subnet-input-name" placeholder="Subnet Name" value="${escapeHtml(s.name || '')}" />
+          <input type="text" class="input subnet-input-cidr" placeholder="Subnet CIDR (10.x.x.x/24)" value="${escapeHtml(s.cidr || '')}" />
           <input type="text" class="input subnet-input-dhcp" placeholder="DHCP / Service" value="${escapeHtml(s.dhcp || '')}" />
           <button type="button" class="btn-icon-del btn-del-subnet" data-del-subnet="${idx}" title="Delete Subnet">&times;</button>
         </div>
@@ -1057,14 +1060,16 @@
             </tr>
           </thead>
           <tbody id="clientSubnetsTbody">
-            ${subnets.map(s => `
-              <tr>
-                <td style="font-weight: 600;">VLAN ${escapeHtml(s.vlan)}</td>
-                <td style="font-weight: 500;">${escapeHtml(s.name)}</td>
-                <td style="color: var(--primary);">${escapeHtml(s.cidr)}</td>
-                <td class="text-muted">${escapeHtml(s.dhcp)}</td>
-              </tr>
-            `).join('')}
+            ${subnets.length === 0
+              ? '<tr><td colspan="4" class="text-muted" style="text-align: center; padding: 20px;">No subnets documented yet. Click "Edit" to add network subnets.</td></tr>'
+              : subnets.map(s => `
+                <tr>
+                  <td style="font-weight: 600;">VLAN ${escapeHtml(s.vlan || '—')}</td>
+                  <td style="font-weight: 500;">${escapeHtml(s.name || '—')}</td>
+                  <td style="color: var(--primary);">${escapeHtml(s.cidr || '—')}</td>
+                  <td class="text-muted">${escapeHtml(s.dhcp || '—')}</td>
+                </tr>
+              `).join('')}
           </tbody>
         </table>
       `;
@@ -1084,35 +1089,35 @@
           <div class="edit-grid-2">
             <div class="form-group">
               <label>Microsoft 365 Domain</label>
-              <input type="text" id="editSecDomain" class="input" value="${escapeHtml(sec.m365Domain || '')}" />
+              <input type="text" id="editSecDomain" class="input" value="${escapeHtml(sec.m365Domain || '')}" placeholder="domain.com" />
             </div>
             <div class="form-group">
               <label>M365 Tenant ID</label>
-              <input type="text" id="editSecTenant" class="input" value="${escapeHtml(sec.m365TenantId || '')}" />
+              <input type="text" id="editSecTenant" class="input" value="${escapeHtml(sec.m365TenantId || '')}" placeholder="Tenant ID" />
             </div>
           </div>
           <div class="edit-grid-2">
             <div class="form-group">
               <label>Directory Identity / Sync</label>
-              <input type="text" id="editSecIdentity" class="input" value="${escapeHtml(sec.identity || '')}" />
+              <input type="text" id="editSecIdentity" class="input" value="${escapeHtml(sec.identity || '')}" placeholder="Identity Sync" />
             </div>
             <div class="form-group">
               <label>EDR &amp; Endpoint Protection</label>
-              <input type="text" id="editSecEdr" class="input" value="${escapeHtml(sec.edr || '')}" />
+              <input type="text" id="editSecEdr" class="input" value="${escapeHtml(sec.edr || '')}" placeholder="EDR Solution" />
             </div>
           </div>
           <div class="edit-grid-3">
             <div class="form-group">
               <label>Backup &amp; Disaster Recovery</label>
-              <input type="text" id="editSecBackup" class="input" value="${escapeHtml(sec.backup || '')}" />
+              <input type="text" id="editSecBackup" class="input" value="${escapeHtml(sec.backup || '')}" placeholder="Backup Solution" />
             </div>
             <div class="form-group">
               <label>Authoritative DNS Registrar</label>
-              <input type="text" id="editSecDns" class="input" value="${escapeHtml(sec.dns || '')}" />
+              <input type="text" id="editSecDns" class="input" value="${escapeHtml(sec.dns || '')}" placeholder="DNS Registrar" />
             </div>
             <div class="form-group">
               <label>RMM Health Status</label>
-              <input type="text" id="editSecRmm" class="input" value="${escapeHtml(sec.rmm || '')}" />
+              <input type="text" id="editSecRmm" class="input" value="${escapeHtml(sec.rmm || '')}" placeholder="RMM Agent Status" />
             </div>
           </div>
           <div class="card-edit-actions">
@@ -1126,13 +1131,13 @@
       container.innerHTML = `
         <div class="info-table-wrap">
           <table class="key-value-table" id="clientCloudSecTable">
-            <tr><td>Microsoft 365 Domain</td><td><strong>${escapeHtml(sec.m365Domain || client.name.toLowerCase().replace(/\s+/g, '') + '.com')}</strong></td></tr>
-            <tr><td>M365 Tenant ID</td><td>${escapeHtml(sec.m365TenantId || '3b7f214a-89a1-42e1-9543-aegis90214b')}</td></tr>
-            <tr><td>Directory Identity</td><td>${escapeHtml(sec.identity || 'Hybrid Microsoft Entra ID Sync')}</td></tr>
-            <tr><td>EDR / Endpoint Sec</td><td><span class="badge badge-teal">${escapeHtml(sec.edr || 'CrowdStrike Falcon Complete')}</span></td></tr>
-            <tr><td>Backup &amp; DR Strategy</td><td>${escapeHtml(sec.backup || 'Immutable BCDR (Hourly snapshots, Cloud Mirror)')}</td></tr>
-            <tr><td>DNS Registrar &amp; Zone</td><td>${escapeHtml(sec.dns || 'Cloudflare Enterprise with Zero-Trust DNS')}</td></tr>
-            <tr><td>RMM Health Status</td><td><span class="badge badge-open">${escapeHtml(sec.rmm || 'Workflow Zero Agent (Compliant)')}</span></td></tr>
+            <tr><td>Microsoft 365 Domain</td><td><strong>${escapeHtml(sec.m365Domain || '—')}</strong></td></tr>
+            <tr><td>M365 Tenant ID</td><td>${escapeHtml(sec.m365TenantId || '—')}</td></tr>
+            <tr><td>Directory Identity</td><td>${escapeHtml(sec.identity || '—')}</td></tr>
+            <tr><td>EDR / Endpoint Sec</td><td>${sec.edr ? `<span class="badge badge-teal">${escapeHtml(sec.edr)}</span>` : '—'}</td></tr>
+            <tr><td>Backup &amp; DR Strategy</td><td>${escapeHtml(sec.backup || '—')}</td></tr>
+            <tr><td>DNS Registrar &amp; Zone</td><td>${escapeHtml(sec.dns || '—')}</td></tr>
+            <tr><td>RMM Health Status</td><td>${sec.rmm ? `<span class="badge badge-open">${escapeHtml(sec.rmm)}</span>` : '—'}</td></tr>
           </table>
         </div>
       `;
@@ -1144,7 +1149,7 @@
     const btn = document.getElementById('editClientAssetsBtn');
     const totalBadge = document.getElementById('clientTotalEndpointsBadge');
     if (!container || !btn) return;
-    const ast = client.assets || { servers: 6, workstations: 120, networkDevices: 12, mobileDevices: 40 };
+    const ast = client.assets || { servers: 0, workstations: 0, networkDevices: 0, mobileDevices: 0 };
     const total = (Number(ast.servers) || 0) + (Number(ast.workstations) || 0) + (Number(ast.networkDevices) || 0) + (Number(ast.mobileDevices) || 0);
 
     if (totalBadge) totalBadge.textContent = `${total} total managed assets`;
@@ -1156,21 +1161,21 @@
           <div class="edit-grid-2">
             <div class="form-group">
               <label>Servers (Physical &amp; Virtual VMs)</label>
-              <input type="number" id="editAssetServers" class="input" value="${ast.servers || 0}" min="0" required />
+              <input type="number" id="editAssetServers" class="input" value="${ast.servers || 0}" min="0" />
             </div>
             <div class="form-group">
               <label>Workstations (Laptops &amp; Desktops)</label>
-              <input type="number" id="editAssetWorkstations" class="input" value="${ast.workstations || 0}" min="0" required />
+              <input type="number" id="editAssetWorkstations" class="input" value="${ast.workstations || 0}" min="0" />
             </div>
           </div>
           <div class="edit-grid-2">
             <div class="form-group">
               <label>Network Devices (Firewalls, Switches, APs)</label>
-              <input type="number" id="editAssetNetwork" class="input" value="${ast.networkDevices || 0}" min="0" required />
+              <input type="number" id="editAssetNetwork" class="input" value="${ast.networkDevices || 0}" min="0" />
             </div>
             <div class="form-group">
               <label>Mobile &amp; MDM Devices</label>
-              <input type="number" id="editAssetMobile" class="input" value="${ast.mobileDevices || 0}" min="0" required />
+              <input type="number" id="editAssetMobile" class="input" value="${ast.mobileDevices || 0}" min="0" />
             </div>
           </div>
           <div class="card-edit-actions">
@@ -1184,19 +1189,19 @@
       container.innerHTML = `
         <div class="assets-metric-row" id="clientAssetsMetrics">
           <div class="asset-pill-box">
-            <div class="asset-pill-val">${ast.servers}</div>
+            <div class="asset-pill-val">${ast.servers || 0}</div>
             <div class="asset-pill-lbl">Servers</div>
           </div>
           <div class="asset-pill-box">
-            <div class="asset-pill-val">${ast.workstations}</div>
+            <div class="asset-pill-val">${ast.workstations || 0}</div>
             <div class="asset-pill-lbl">Workstations</div>
           </div>
           <div class="asset-pill-box">
-            <div class="asset-pill-val">${ast.networkDevices}</div>
+            <div class="asset-pill-val">${ast.networkDevices || 0}</div>
             <div class="asset-pill-lbl">Network</div>
           </div>
           <div class="asset-pill-box">
-            <div class="asset-pill-val">${ast.mobileDevices}</div>
+            <div class="asset-pill-val">${ast.mobileDevices || 0}</div>
             <div class="asset-pill-lbl">Mobile</div>
           </div>
         </div>
@@ -2289,19 +2294,21 @@
       showToast('Client knowledge article saved');
     });
 
-    // New Client Submit
+    // New Client Submit (No dummy defaults, all optional fields can be left blank)
     document.getElementById('newClientForm')?.addEventListener('submit', e => {
       e.preventDefault();
       const name = document.getElementById('newClientName').value.trim();
-      const industry = document.getElementById('newClientIndustry').value.trim() || 'General Enterprise';
-      const contactName = document.getElementById('newClientContact').value.trim();
-      const contactEmail = document.getElementById('newClientEmail').value.trim();
-      const phone = document.getElementById('newClientPhone').value.trim() || '—';
+      if (!name) return;
+
+      const industry = document.getElementById('newClientIndustry').value.trim() || '';
+      const contactName = document.getElementById('newClientContact').value.trim() || '';
+      const contactEmail = document.getElementById('newClientEmail').value.trim() || '';
+      const phone = document.getElementById('newClientPhone').value.trim() || '';
       const address = document.getElementById('newClientAddress').value.trim() || '';
-      const hourlyRate = Number(document.getElementById('newClientRate').value || 175);
-      const mrr = Number(document.getElementById('newClientMrr').value || 7500);
-      const firewall = document.getElementById('newClientFirewall').value.trim() || 'FortiGate HA Cluster';
-      const domain = document.getElementById('newClientDomain').value.trim() || name.toLowerCase().replace(/\s+/g, '') + '.com';
+      const hourlyRate = Number(document.getElementById('newClientRate').value) || 0;
+      const mrr = Number(document.getElementById('newClientMrr').value) || 0;
+      const firewall = document.getElementById('newClientFirewall').value.trim() || '';
+      const domain = document.getElementById('newClientDomain').value.trim() || '';
 
       const newCli = {
         id: 'cli-' + Date.now(),
@@ -2312,39 +2319,36 @@
         primaryContact: { name: contactName, title: 'Primary Contact', email: contactEmail, phone },
         contactName,
         contactEmail,
-        slaTier: '24/7 Managed Core',
+        slaTier: '',
         mrr,
         hourlyRate,
-        contractRenewal: 'Nov 30, 2027',
+        contractRenewal: '',
         network: {
           firewall,
-          firewallMgmtIp: '10.10.0.1',
-          wan1Isp: 'Dedicated Fiber Internet (1 Gbps)',
-          wan1Circuit: 'CKT-FIBER-01 (Static IP)',
-          wan2Isp: 'Backup Broadband (300 Mbps)',
-          wan2Circuit: 'CKT-BACKUP-02',
-          coreSwitches: 'Managed PoE+ Switch Stack',
-          subnets: [
-            { vlan: '10', name: 'Corporate Workstations', cidr: '10.10.10.0/24', dhcp: 'DHCP' },
-            { vlan: '50', name: 'Guest Wi-Fi', cidr: '172.16.50.0/24', dhcp: 'Isolated' }
-          ],
-          wifi: 'Corporate 802.1X + Guest Wi-Fi',
-          vpn: 'SSL-VPN with MFA'
+          firewallMgmtIp: '',
+          wan1Isp: '',
+          wan1Circuit: '',
+          wan2Isp: '',
+          wan2Circuit: '',
+          coreSwitches: '',
+          subnets: [],
+          wifi: '',
+          vpn: ''
         },
         cloudAndSecurity: {
           m365Domain: domain,
-          m365TenantId: 'tenant-' + Date.now(),
-          identity: 'Microsoft Entra ID Sync',
-          edr: 'EDR Managed Antivirus',
-          backup: 'Automated Immutable Cloud Backup',
-          dns: 'Cloudflare Protected DNS',
-          rmm: 'Workflow Zero Agent Active'
+          m365TenantId: '',
+          identity: '',
+          edr: '',
+          backup: '',
+          dns: '',
+          rmm: ''
         },
         assets: {
-          servers: 4,
-          workstations: 45,
-          networkDevices: 6,
-          mobileDevices: 20
+          servers: 0,
+          workstations: 0,
+          networkDevices: 0,
+          mobileDevices: 0
         }
       };
 
@@ -2401,109 +2405,9 @@
       }
     });
 
-    document.getElementById('authQuickDemoBtn')?.addEventListener('click', async () => {
-      try {
-        await window.FirebaseService.signIn('tech@workflowzero.it', 'demo1234');
-        showToast('Signed in in local / offline mode.');
-      } catch (e) {
-        console.error(e);
-      }
-    });
-
     document.getElementById('logoutBtn')?.addEventListener('click', async () => {
       await window.FirebaseService.signOut();
       showToast('Signed out of PSA.');
-    });
-
-    // -----------------------------------------------------------------------
-    // FIREBASE CLOUD SETUP MODAL
-    // -----------------------------------------------------------------------
-    const openFbModal = () => {
-      const cfg = window.FirebaseService.loadConfig();
-      document.getElementById('fbApiKeyInput').value = cfg.apiKey || '';
-      document.getElementById('fbProjectIdInput').value = cfg.projectId || '';
-      document.getElementById('fbAuthDomainInput').value = cfg.authDomain || '';
-      document.getElementById('fbStorageBucketInput').value = cfg.storageBucket || '';
-      const feedback = document.getElementById('fbSetupFeedback');
-      if (feedback) feedback.style.display = 'none';
-      openModal('firebaseModal');
-    };
-
-    document.getElementById('cloudStatusBtn')?.addEventListener('click', openFbModal);
-    document.getElementById('authCloudSettingsLink')?.addEventListener('click', openFbModal);
-
-    // Auto-parse pasted config
-    document.getElementById('firebaseConfigPasteInput')?.addEventListener('input', e => {
-      const text = e.target.value;
-      const parsed = window.FirebaseService.parseConfigString(text);
-      if (parsed) {
-        if (parsed.apiKey) document.getElementById('fbApiKeyInput').value = parsed.apiKey;
-        if (parsed.projectId) document.getElementById('fbProjectIdInput').value = parsed.projectId;
-        if (parsed.authDomain) document.getElementById('fbAuthDomainInput').value = parsed.authDomain;
-        if (parsed.storageBucket) document.getElementById('fbStorageBucketInput').value = parsed.storageBucket;
-
-        const feedback = document.getElementById('fbSetupFeedback');
-        if (feedback) {
-          feedback.style.display = 'block';
-          feedback.style.background = 'var(--teal-soft)';
-          feedback.style.color = 'var(--teal)';
-          feedback.textContent = '✓ Configuration parsed! Click "Save & Connect Cloud" to initialize.';
-        }
-      }
-    });
-
-    document.getElementById('fbSaveBtn')?.addEventListener('click', async () => {
-      const config = {
-        apiKey: document.getElementById('fbApiKeyInput').value.trim(),
-        projectId: document.getElementById('fbProjectIdInput').value.trim(),
-        authDomain: document.getElementById('fbAuthDomainInput').value.trim(),
-        storageBucket: document.getElementById('fbStorageBucketInput').value.trim()
-      };
-
-      if (!config.apiKey || !config.projectId) {
-        const feedback = document.getElementById('fbSetupFeedback');
-        if (feedback) {
-          feedback.style.display = 'block';
-          feedback.style.background = 'var(--danger-soft)';
-          feedback.style.color = 'var(--danger)';
-          feedback.textContent = 'Please enter at least the API Key and Project ID.';
-        }
-        return;
-      }
-
-      const ok = window.FirebaseService.saveConfig(config);
-      const feedback = document.getElementById('fbSetupFeedback');
-      if (feedback) {
-        feedback.style.display = 'block';
-        if (ok) {
-          feedback.style.background = 'var(--teal-soft)';
-          feedback.style.color = 'var(--teal)';
-          feedback.textContent = '✓ Connected to Firebase Project "' + config.projectId + '"!';
-          showToast(`Firebase Cloud Database connected (${config.projectId})`);
-          setTimeout(() => closeModal('firebaseModal'), 1200);
-        } else {
-          feedback.style.background = 'var(--danger-soft)';
-          feedback.style.color = 'var(--danger)';
-          feedback.textContent = 'Unable to initialize Firebase with these credentials. Check console for details.';
-        }
-      }
-    });
-
-    document.getElementById('fbResetBtn')?.addEventListener('click', () => {
-      window.FirebaseService.clearConfig();
-      document.getElementById('fbApiKeyInput').value = '';
-      document.getElementById('fbProjectIdInput').value = '';
-      document.getElementById('fbAuthDomainInput').value = '';
-      document.getElementById('fbStorageBucketInput').value = '';
-      document.getElementById('firebaseConfigPasteInput').value = '';
-      const feedback = document.getElementById('fbSetupFeedback');
-      if (feedback) {
-        feedback.style.display = 'block';
-        feedback.style.background = 'var(--surface-subtle)';
-        feedback.style.color = 'var(--text-muted)';
-        feedback.textContent = 'Firebase config cleared. Running in local mode.';
-      }
-      showToast('Firebase connection reset.');
     });
 
     // Delegated actions for empty states
@@ -2523,10 +2427,6 @@
     const urlParams = new URLSearchParams(window.location.search);
     const editParam = urlParams.get('edit');
 
-    if (urlParams.get('login') === 'demo') {
-      window.FirebaseService.signIn('javier@workflowzero.it', 'demo1234');
-    }
-
     if (rawHash.startsWith('client/')) {
       const clientId = rawHash.split('/')[1];
       if (clientId) {
@@ -2539,10 +2439,6 @@
         }
         return;
       }
-    }
-    if (rawHash === 'firebase' || rawHash === 'cloud') {
-      openModal('firebaseModal');
-      return;
     }
     if (rawHash.startsWith('invoice/')) {
       const clientId = rawHash.split('/')[1] || selectedClientId;
@@ -2574,30 +2470,11 @@
     handleHashRoute();
     window.addEventListener('hashchange', handleHashRoute);
 
-    // Initialize Firebase Auth & Cloud Sync listener
+    // Cloud Sync & Authentication Listener
     if (window.FirebaseService) {
       window.FirebaseService.onAuthStateChanged(user => {
         const authScreen = document.getElementById('authScreen');
-        const cloudDot = document.getElementById('cloudStatusDot');
-        const cloudText = document.getElementById('cloudStatusText');
-        const authCloudDot = document.getElementById('authCloudDot');
-        const authCloudText = document.getElementById('authCloudStatusText');
-
-        const isCfg = window.FirebaseService.isConfigured();
         const isReady = window.FirebaseService.isCloudReady();
-
-        if (cloudDot) {
-          cloudDot.className = 'cloud-status-dot ' + (isReady ? 'connected' : (isCfg ? 'connected' : 'setup'));
-        }
-        if (cloudText) {
-          cloudText.textContent = isReady ? 'Cloud: Connected' : (isCfg ? 'Firebase Ready' : 'Cloud Setup');
-        }
-        if (authCloudDot) {
-          authCloudDot.className = 'cloud-status-dot ' + (isCfg ? 'connected' : 'setup');
-        }
-        if (authCloudText) {
-          authCloudText.textContent = isCfg ? `Firebase: ${window.FirebaseService.loadConfig().projectId}` : 'Firebase: Configure Cloud Database';
-        }
 
         if (user) {
           authScreen?.classList.add('hidden');

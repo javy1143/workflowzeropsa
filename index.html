@@ -42,12 +42,6 @@
         <button class="timer-btn timer-btn-log" id="globalTimerStopBtn" title="Stop & Log Time" disabled>Log</button>
       </div>
 
-      <!-- Cloud Database Status Pill -->
-      <div class="cloud-status-pill" id="cloudStatusBtn" title="Click to configure Firebase Cloud Database">
-        <span class="cloud-status-dot setup" id="cloudStatusDot"></span>
-        <span id="cloudStatusText">Cloud Setup</span>
-      </div>
-
       <!-- Technician Profile Pill -->
       <div class="user-pill" id="userPill">
         <span class="user-avatar" id="userAvatar">Tech</span>
@@ -810,52 +804,52 @@
       <form id="newClientForm" class="stack-sm">
         <div class="row-2">
           <div>
-            <label class="label">Client Organization Name</label>
-            <input type="text" id="newClientName" class="input" placeholder="Acme Biotech" required />
+            <label class="label">Client Organization Name <span class="text-danger">*</span></label>
+            <input type="text" id="newClientName" class="input" placeholder="Organization name" required />
           </div>
           <div>
             <label class="label">Industry</label>
-            <input type="text" id="newClientIndustry" class="input" placeholder="Biotech & Healthcare" required />
+            <input type="text" id="newClientIndustry" class="input" placeholder="Industry" />
           </div>
         </div>
         <div class="row-2">
           <div>
             <label class="label">Primary Contact Person</label>
-            <input type="text" id="newClientContact" class="input" placeholder="Full Name & Title" required />
+            <input type="text" id="newClientContact" class="input" placeholder="Contact name &amp; title" />
           </div>
           <div>
             <label class="label">Contact Email</label>
-            <input type="email" id="newClientEmail" class="input" placeholder="contact@acme.com" required />
+            <input type="email" id="newClientEmail" class="input" placeholder="Contact email" />
           </div>
         </div>
         <div class="row-2">
           <div>
             <label class="label">Phone</label>
-            <input type="text" id="newClientPhone" class="input" placeholder="(555) 000-0000" />
+            <input type="text" id="newClientPhone" class="input" placeholder="Phone number" />
           </div>
           <div>
             <label class="label">Office Address</label>
-            <input type="text" id="newClientAddress" class="input" placeholder="City, State" />
+            <input type="text" id="newClientAddress" class="input" placeholder="Office address" />
           </div>
         </div>
         <div class="row-2">
           <div>
             <label class="label">Hourly Rate ($/hr)</label>
-            <input type="number" id="newClientRate" class="input" value="175" required />
+            <input type="number" id="newClientRate" class="input" placeholder="0" min="0" />
           </div>
           <div>
             <label class="label">Monthly Retainer ($ MRR)</label>
-            <input type="number" id="newClientMrr" class="input" value="7500" required />
+            <input type="number" id="newClientMrr" class="input" placeholder="0" min="0" />
           </div>
         </div>
         <div class="row-2">
           <div>
             <label class="label">Primary Firewall / Gateway</label>
-            <input type="text" id="newClientFirewall" class="input" placeholder="e.g. FortiGate 200F or Meraki MX" />
+            <input type="text" id="newClientFirewall" class="input" placeholder="Firewall / Gateway model" />
           </div>
           <div>
             <label class="label">M365 Domain</label>
-            <input type="text" id="newClientDomain" class="input" placeholder="acme.com" />
+            <input type="text" id="newClientDomain" class="input" placeholder="domain.com" />
           </div>
         </div>
         <div class="modal-footer">
@@ -877,75 +871,6 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-close-modal="invoicePreviewModal">Close</button>
         <button type="button" class="btn btn-primary" id="markInvoiceSentBtn">Send Invoice &amp; Mark Billed</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL 7: FIREBASE CLOUD DATABASE & AUTH SETUP -->
-  <div class="modal-backdrop hidden" id="firebaseModal">
-    <div class="modal modal-lg">
-      <div class="modal-header">
-        <h2>Firebase Cloud Database &amp; Authentication</h2>
-        <button class="modal-close" data-close-modal="firebaseModal">&times;</button>
-      </div>
-      <div class="stack-sm">
-        <p class="text-muted" style="font-size: 13px;">
-          Connect your Google Firebase project to enable Firestore cloud database synchronization and technician login across all devices.
-        </p>
-
-        <div style="background: var(--surface-subtle); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-size: 12.5px; line-height: 1.6;">
-          <strong>Free Firebase Setup Guide (3 minutes):</strong>
-          <ol style="margin-left: 20px; margin-top: 4px;">
-            <li>Go to <a href="https://console.firebase.google.com" target="_blank" rel="noopener" style="color: var(--primary); font-weight: 600;">console.firebase.google.com</a> and create or open your project.</li>
-            <li>In <strong>Project Settings &gt; General</strong>, scroll down, click Web (<code>&lt;/&gt;</code>) to register an app, and copy the <code>firebaseConfig</code> object.</li>
-            <li>In <strong>Build &gt; Authentication &gt; Sign-in method</strong>, enable the <strong>Email/Password</strong> provider.</li>
-            <li>In <strong>Build &gt; Firestore Database</strong>, click <strong>Create Database</strong> (choose Test Mode or add security rules).</li>
-          </ol>
-        </div>
-
-        <div>
-          <label class="label">Paste Firebase Web Config (JSON or JavaScript snippet)</label>
-          <textarea id="firebaseConfigPasteInput" class="textarea" rows="4" placeholder='const firebaseConfig = {
-  apiKey: "AIzaSy...",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "1234567890",
-  appId: "1:1234567890:web:abcdef..."
-};'></textarea>
-        </div>
-
-        <div class="row-2">
-          <div>
-            <label class="label">API Key</label>
-            <input type="text" id="fbApiKeyInput" class="input full-width" placeholder="AIzaSy..." />
-          </div>
-          <div>
-            <label class="label">Project ID</label>
-            <input type="text" id="fbProjectIdInput" class="input full-width" placeholder="workflowzero-psa" />
-          </div>
-        </div>
-
-        <div class="row-2">
-          <div>
-            <label class="label">Auth Domain</label>
-            <input type="text" id="fbAuthDomainInput" class="input full-width" placeholder="project.firebaseapp.com" />
-          </div>
-          <div>
-            <label class="label">Storage Bucket</label>
-            <input type="text" id="fbStorageBucketInput" class="input full-width" placeholder="project.appspot.com" />
-          </div>
-        </div>
-
-        <div id="fbSetupFeedback" style="font-size: 13px; font-weight: 500; display: none; padding: 8px 12px; border-radius: var(--radius);"></div>
-
-        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-          <button type="button" class="btn btn-secondary" id="fbResetBtn" style="color: var(--danger);">Disconnect / Reset</button>
-          <div style="display: flex; gap: 8px;">
-            <button type="button" class="btn btn-secondary" data-close-modal="firebaseModal">Cancel</button>
-            <button type="button" class="btn btn-primary" id="fbSaveBtn">Save &amp; Connect Cloud</button>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -983,14 +908,6 @@
       <div class="auth-restricted-note">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -1px; margin-right: 4px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
         Public account creation is disabled. All technician accounts must be provisioned by your system administrator.
-      </div>
-
-      <div class="auth-footer">
-        <div class="auth-cloud-badge" id="authCloudSettingsLink" title="Click to view Firebase status">
-          <span class="cloud-status-dot setup" id="authCloudDot"></span>
-          <span id="authCloudStatusText">Firebase: workflowzero-psa-app</span>
-        </div>
-        <button type="button" class="btn-link" id="authQuickDemoBtn" style="font-size: 12px;">Continue with Offline / Local Demo Account &rarr;</button>
       </div>
     </div>
   </div>

@@ -50,36 +50,32 @@ http://localhost:4173
 
 ---
 
-## ☁️ Firebase Cloud Database & Authentication Setup
+## ☁️ Firebase Cloud Database & Authentication
 
-Workflow Zero PSA works seamlessly offline or connected to your live Google Firebase project.
+Workflow Zero PSA comes pre-configured with the official Firebase project:
+- **Project ID**: `workflowzero-psa-app`
+- **Console URL**: [https://console.firebase.google.com/project/workflowzero-psa-app/overview](https://console.firebase.google.com/project/workflowzero-psa-app/overview)
 
-### Quick 3-Minute Setup:
-1. Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project (e.g., `workflow-zero-psa`).
-2. **Enable Authentication**:
-   - Navigate to **Build > Authentication > Sign-in method**.
-   - Enable **Email/Password**.
-3. **Enable Firestore Database**:
-   - Navigate to **Build > Firestore Database > Create Database**.
-   - Start in **Test mode** (or configure standard security rules).
-4. **Register a Web App**:
-   - In Project Settings, click the **Web (`</>`)** icon to create an app.
-   - Copy the `firebaseConfig` object snippet:
-     ```javascript
-     const firebaseConfig = {
-       apiKey: "AIzaSy...",
-       authDomain: "workflow-zero-psa.firebaseapp.com",
-       projectId: "workflow-zero-psa",
-       storageBucket: "workflow-zero-psa.appspot.com",
-       messagingSenderId: "...",
-       appId: "..."
-     };
-     ```
-5. **Paste into Workflow Zero PSA**:
-   - Open the PSA in your browser.
-   - Click the **Cloud Status Pill** in the top navigation bar (or open the Firebase modal).
-   - Paste the config directly into the quick-paste box and click **Save & Connect**.
-   - All client records, tickets, notes, time logs, and KB articles will automatically synchronize with Firestore in real-time.
+### To activate Authentication and Firestore in your Firebase Console:
+1. **Enable Authentication**:
+   - Go to [Authentication](https://console.firebase.google.com/project/workflowzero-psa-app/authentication) -> Click **Get Started**.
+   - Under Sign-in method, click **Email/Password** and toggle **Enable**, then click Save.
+2. **Enable Firestore Database**:
+   - Go to [Firestore Database](https://console.firebase.google.com/project/workflowzero-psa-app/firestore) -> Click **Create Database**.
+   - Select Location (e.g. `nam5` / United States) and start in **Test mode** (or configure standard security rules).
+
+The PSA is already pre-wired with your project credentials:
+```javascript
+const firebaseConfig = {
+  apiKey: "AIzaSyDrNUzZEEAYPYcv3gq06tdnpgQl-StsvYQ",
+  authDomain: "workflowzero-psa-app.firebaseapp.com",
+  projectId: "workflowzero-psa-app",
+  storageBucket: "workflowzero-psa-app.firebasestorage.app",
+  messagingSenderId: "1097325805120",
+  appId: "1:1097325805120:web:e478edd4565f8eee4be9a5"
+};
+```
+All technician accounts, client profiles, tickets, time logs, and KB articles will automatically synchronize with Firestore in real-time.
 
 ---
 

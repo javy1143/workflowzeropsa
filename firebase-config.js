@@ -8,14 +8,14 @@
   const STORAGE_KEY_CONFIG = 'wz_firebase_config_v1';
   const STORAGE_KEY_AUTH_USER = 'wz_local_auth_user_v1';
 
-  // Default empty placeholder config
+  // Active Workflow Zero IT Firebase Cloud Project
   const DEFAULT_CONFIG = {
-    apiKey: '',
-    authDomain: '',
-    projectId: '',
-    storageBucket: '',
-    messagingSenderId: '',
-    appId: ''
+    apiKey: 'AIzaSyDrNUzZEEAYPYcv3gq06tdnpgQl-StsvYQ',
+    authDomain: 'workflowzero-psa-app.firebaseapp.com',
+    projectId: 'workflowzero-psa-app',
+    storageBucket: 'workflowzero-psa-app.firebasestorage.app',
+    messagingSenderId: '1097325805120',
+    appId: '1:1097325805120:web:e478edd4565f8eee4be9a5'
   };
 
   let firebaseApp = null;

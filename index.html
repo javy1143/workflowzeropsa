@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Workflow Zero IT — PSA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="logo.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="#dashboard" class="brand" id="brandHomeLink">
+        <img src="logo.png" alt="Workflow Zero IT Logo" class="brand-img" />
+        <span class="brand-name">Workflow Zero <span class="brand-accent">IT</span></span>
+      </a>
+
+      <nav class="nav-tabs" role="tablist">
+        <button class="nav-tab active" data-tab="dashboard" onclick="switchTab('dashboard')">Dashboard</button>
+        <button class="nav-tab" data-tab="tickets" onclick="switchTab('tickets')">
+          Tickets <span class="tab-count" id="navTicketCount">0</span>
+        </button>
+        <button class="nav-tab" data-tab="dispatch" onclick="switchTab('dispatch')">Dispatch Board</button>
+        <button class="nav-tab" data-tab="clients" onclick="switchTab('clients')">Clients</button>
+        <button class="nav-tab" data-tab="billing" onclick="switchTab('billing')">Billing</button>
+        <button class="nav-tab" data-tab="knowledge" onclick="switchTab('knowledge')">Knowledge</button>
+      </nav>
+    </div>
+
+    <div class="topbar-right">
+      <!-- Compact Live Timer Pill -->
+      <div class="header-timer" id="globalTimerBar">
+        <span class="timer-dot" id="globalTimerDot"></span>
+        <span class="timer-ticket" id="globalTimerTicketId">No Active Ticket</span>
+        <span class="timer-readout" id="globalTimerDisplay">00:00:00</span>
+        <button class="timer-btn" id="globalTimerToggleBtn" title="Start / Pause Timer">Start</button>
+        <button class="timer-btn timer-btn-log" id="globalTimerStopBtn" title="Stop & Log Time" disabled>Log</button>
+      </div>
+
+      <!-- Cloud Database Status Pill -->
+      <div class="cloud-status-pill" id="cloudStatusBtn" title="Click to configure Firebase Cloud Database">
+        <span class="cloud-status-dot setup" id="cloudStatusDot"></span>
+        <span id="cloudStatusText">Cloud Setup</span>
+      </div>
+
+      <!-- Technician Profile Pill -->
+      <div class="user-pill" id="userPill">
+        <span class="user-avatar" id="userAvatar">Tech</span>
+        <div class="user-meta">
+          <span class="user-name" id="userDisplayName">Technician</span>
+          <span class="user-email" id="userDisplayEmail">tech@workflowzero.it</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="logoutBtn" style="padding: 2px 7px; font-size: 11px;">Sign Out</button>
+      </div>
+
+      <button class="btn btn-primary" id="headerNewTicketBtn">+ New Ticket</button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="container">
+
+    <!-- ==========================================
+         1. DASHBOARD
+         ========================================== -->
+    <section class="view active" id="view-dashboard">
+      <div class="page-header">
+        <div>
+          <h1>Dashboard</h1>
+          <p class="text-muted">Overview of open service tickets, today's schedule, client health, and billable hours.</p>
+        </div>
+      </div>
+
+      <!-- 4-Stat Summary Row -->
+      <div class="stats-row" id="dashboardStats"></div>
+
+      <!-- 2-Column Wide Lists -->
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Active Tickets</h2>
+            <button class="btn-link" data-goto-tab="tickets">View all tickets &rarr;</button>
+          </div>
+          <div class="list-container" id="dashboardTicketsList"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Today's Dispatch Schedule (Tue, Nov 10)</h2>
+            <button class="btn-link" data-goto-tab="dispatch">Open calendar &rarr;</button>
+          </div>
+          <div class="list-container" id="dashboardScheduleList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         2. TICKETS (Condensed List + Ticket View)
+         ========================================== -->
+    <section class="view" id="view-tickets">
+      <!-- SUBVIEW A: CONDENSED LIST -->
+      <div id="ticketQueueSubview">
+        <div class="page-header">
+          <div>
+            <h1>Tickets</h1>
+            <p class="text-muted">Single-row triage queue. Click any row to open the ticket workspace, start the billable timer, or email client updates.</p>
+          </div>
+          <button class="btn btn-primary" id="queueNewTicketBtn">+ New Ticket</button>
+        </div>
+
+        <div class="filter-bar">
+          <input type="text" id="ticketSearchInput" class="input search-input" placeholder="Search ticket ID, subject, or client..." />
+          <div class="segmented-control" id="ticketStatusFilterGroup">
+            <button class="seg-btn active" data-status="all">All</button>
+            <button class="seg-btn" data-status="Open">Open</button>
+            <button class="seg-btn" data-status="In Progress">In Progress</button>
+            <button class="seg-btn" data-status="Waiting">Waiting</button>
+            <button class="seg-btn" data-status="Resolved">Resolved</button>
+          </div>
+
+          <select id="ticketClientFilter" class="select">
+            <option value="all">All Clients</option>
+          </select>
+
+          <!-- Sort by Last Update feature -->
+          <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+            <label class="label" style="margin: 0; white-space: nowrap;">Sort by:</label>
+            <select id="ticketSortSelect" class="select">
+              <option value="updated">Last Updated (Newest)</option>
+              <option value="created">Date Created</option>
+              <option value="priority">Priority (High to Low)</option>
+              <option value="status">Status</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="panel flush">
+          <table class="clean-list-table">
+            <thead>
+              <tr>
+                <th style="width: 95px;">ID</th>
+                <th>Subject</th>
+                <th style="width: 180px;">Client</th>
+                <th style="width: 95px;">Priority</th>
+                <th style="width: 115px;">Status</th>
+                <th style="width: 150px;">Last Updated</th>
+                <th style="width: 155px;">Scheduled</th>
+                <th style="width: 110px;">Tech</th>
+                <th style="width: 85px; text-align: right;">Hours</th>
+              </tr>
+            </thead>
+            <tbody id="fullTicketQueueTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SUBVIEW B: CLEAN TICKET DETAIL VIEW -->
+      <div id="ticketDetailSubview" class="hidden">
+        <div class="detail-nav">
+          <button class="btn btn-secondary btn-sm" id="backToQueueBtn">&larr; Back to Tickets</button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" id="detailMergeTicketBtn">Merge Ticket...</button>
+          </div>
+        </div>
+
+        <div class="panel ticket-header-panel">
+          <div class="ticket-header-left">
+            <div class="ticket-meta-top">
+              <span class="mono-id" id="detailTicketId">#WZ-1048</span>
+              <span class="badge" id="detailPriorityBadge">High</span>
+              <span class="text-muted" id="detailCategoryChip">Network</span>
+              <span class="text-muted" id="detailLastUpdatedMeta" style="font-size: 12px; margin-left: 8px;">Updated: Nov 10, 8:35 AM</span>
+            </div>
+            <h1 class="ticket-title" id="detailTicketSubject">Ticket Subject</h1>
+            <div class="ticket-client-line">
+              Client: <strong class="clickable-link" id="detailClientName">Aegis BioLabs</strong>
+              &bull; Contact: <span id="detailContactEmail">m.chen@aegisbiolabs.com</span>
+              &bull; Rate: <strong id="detailClientRate">$175/hr</strong>
+            </div>
+          </div>
+
+          <div class="ticket-header-controls">
+            <div class="field-inline">
+              <label>Status</label>
+              <select id="detailStatusSelect" class="select">
+                <option value="Open">Open</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Waiting">Waiting</option>
+                <option value="Resolved">Resolved</option>
+              </select>
+            </div>
+            <div class="field-inline">
+              <label>Priority</label>
+              <select id="detailPrioritySelect" class="select">
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+            <div class="field-inline">
+              <label>Assigned</label>
+              <select id="detailTechSelect" class="select">
+                <option value="Javier M.">Javier M.</option>
+                <option value="Elena R.">Elena R.</option>
+                <option value="Marcus V.">Marcus V.</option>
+                <option value="Alex C.">Alex C.</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="ticket-detail-grid">
+          <!-- Left: Description, Notes & Client Email -->
+          <div class="stack">
+            <div class="panel">
+              <h3>Description</h3>
+              <p class="description-text" id="detailInitialDescription"></p>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h3>Ticket Notes &amp; Client Email Update</h3>
+                <select id="insertKbSelect" class="select select-sm">
+                  <option value="">+ Insert Client KB Article...</option>
+                </select>
+              </div>
+
+              <textarea id="ticketNoteTextarea" class="textarea" rows="4" placeholder="Type a resolution step or status update..."></textarea>
+
+              <div class="note-actions-bar">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="autoEmailToggleCheckbox" checked />
+                  <span>Automatically email this update to <strong id="composerRecipientEmail">client</strong></span>
+                </label>
+                <button class="btn btn-primary" id="submitTicketNoteBtn">Save Note &amp; Email Client</button>
+              </div>
+
+              <div class="notes-history" id="detailTimelineList"></div>
+            </div>
+          </div>
+
+          <!-- Right: Billable Timer + Manual Time + Schedule -->
+          <div class="stack">
+            <div class="panel">
+              <div class="panel-header">
+                <h3>Billable Time</h3>
+                <span class="badge badge-teal" id="detailTotalBillableBadge">0.00 hrs</span>
+              </div>
+
+              <!-- Live Timer Box -->
+              <div class="timer-card" id="detailLiveTimerPanel">
+                <div class="timer-card-top">
+                  <span class="text-muted">Live Work Timer</span>
+                  <span class="mono-cost" id="detailLiveCostReadout">$0.00</span>
+                </div>
+                <div class="timer-big-clock" id="detailTimerClock">00:00:00</div>
+                <div class="timer-card-buttons">
+                  <button class="btn btn-primary full-width" id="detailStartPauseTimerBtn">Start Timer</button>
+                  <button class="btn btn-secondary" id="detailStopAndLogBtn" disabled>Stop &amp; Log</button>
+                </div>
+              </div>
+
+              <!-- Manual Time Input -->
+              <form id="detailManualTimeForm" class="manual-time-box">
+                <div class="section-label">Or Log Time Manually</div>
+                <div class="manual-row">
+                  <input type="number" id="manualHoursInput" class="input" style="width: 100px;" step="0.25" min="0.25" placeholder="Hrs (1.25)" required />
+                  <input type="text" id="manualNoteInput" class="input" placeholder="Work summary..." required />
+                  <button type="submit" class="btn btn-secondary">Add</button>
+                </div>
+              </form>
+
+              <div class="time-log-list" id="detailTimeEntriesList"></div>
+            </div>
+
+            <!-- Dispatch Schedule Box -->
+            <div class="panel">
+              <div class="panel-header">
+                <h3>Dispatch Schedule</h3>
+                <button class="btn-link" data-goto-tab="dispatch">Calendar &rarr;</button>
+              </div>
+              <div id="detailDispatchStatusBox" class="schedule-status"></div>
+              <form id="detailQuickDispatchForm" class="schedule-form">
+                <select id="detailDispatchDaySelect" class="select">
+                  <option value="2026-11-09">Mon, Nov 9</option>
+                  <option value="2026-11-10" selected>Tue, Nov 10</option>
+                  <option value="2026-11-11">Wed, Nov 11</option>
+                  <option value="2026-11-12">Thu, Nov 12</option>
+                  <option value="2026-11-13">Fri, Nov 13</option>
+                </select>
+                <select id="detailDispatchHourSelect" class="select">
+                  <option value="8">8:00 AM</option>
+                  <option value="9">9:00 AM</option>
+                  <option value="10">10:00 AM</option>
+                  <option value="11">11:00 AM</option>
+                  <option value="13">1:00 PM</option>
+                  <option value="14">2:00 PM</option>
+                  <option value="15">3:00 PM</option>
+                  <option value="16">4:00 PM</option>
+                </select>
+                <button type="submit" class="btn btn-secondary">Schedule</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         3. DISPATCH BOARD (Simple Calendar)
+         ========================================== -->
+    <section class="view" id="view-dispatch">
+      <div class="page-header">
+        <div>
+          <h1>Dispatch Board</h1>
+          <p class="text-muted">Calendar planner for scheduling technician time. Drag unscheduled tickets onto any slot or click a slot to schedule.</p>
+        </div>
+        <select id="dispatchTechFilter" class="select">
+          <option value="all">All Technicians</option>
+          <option value="Javier M.">Javier M.</option>
+          <option value="Elena R.">Elena R.</option>
+          <option value="Marcus V.">Marcus V.</option>
+          <option value="Alex C.">Alex C.</option>
+        </select>
+      </div>
+
+      <div class="dispatch-layout">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Unscheduled Tickets</h3>
+            <span class="tab-count" id="unscheduledCountBadge">0</span>
+          </div>
+          <div class="unscheduled-list" id="dispatchBacklogList"></div>
+        </div>
+
+        <div class="panel flush">
+          <div id="dispatchCalendarGrid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         4. CLIENTS (Clean List + Full MSP Dossier)
+         ========================================== -->
+    <section class="view" id="view-clients">
+      <!-- SUBVIEW A: CLIENT LIST -->
+      <div id="clientsListSubview">
+        <div class="page-header">
+          <div>
+            <h1>Clients</h1>
+            <p class="text-muted">Managed organizations, infrastructure documentation, and SLAs. Click any client to open their full MSP profile.</p>
+          </div>
+          <button class="btn btn-primary" id="newClientBtn">+ Add Client</button>
+        </div>
+
+        <div class="filter-bar">
+          <input type="text" id="clientSearchInput" class="input search-input" placeholder="Search client name, contact, industry..." />
+        </div>
+
+        <div class="panel flush">
+          <table class="clean-list-table">
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Industry</th>
+                <th>Primary Contact</th>
+                <th>Phone</th>
+                <th>SLA Agreement</th>
+                <th>Endpoints</th>
+                <th>Open Tickets</th>
+                <th>Monthly Retainer</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="clientsListTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SUBVIEW B: FULL MSP CLIENT DOSSIER -->
+      <div id="clientDetailSubview" class="hidden">
+        <div class="detail-nav">
+          <button class="btn btn-secondary btn-sm" id="backToClientsListBtn">&larr; Back to Clients</button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" id="clientProfileNewTicketBtn">+ New Ticket</button>
+            <button class="btn btn-secondary btn-sm" id="clientProfileNewKbBtn">+ New KB Article</button>
+            <button class="btn btn-primary btn-sm" id="clientProfileInvoiceBtn">Generate Invoice</button>
+          </div>
+        </div>
+
+        <!-- Client Hero Summary -->
+        <div class="panel client-hero-panel" id="clientHeroSummary">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- MSP Dossier Multi-Card Grid (Every Card Editable) -->
+        <div class="msp-dossier-grid">
+          <!-- Column 1: Network & Infrastructure -->
+          <div class="stack">
+            <div class="panel" id="clientNetworkPanel">
+              <div class="panel-header">
+                <h3>Network &amp; Perimeter Gateway</h3>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="badge badge-open" id="clientHeroFirewallBadge">Active HA</span>
+                  <button class="btn btn-secondary btn-sm" id="editClientNetworkBtn">Edit</button>
+                </div>
+              </div>
+              <div id="clientNetworkContainer">
+                <div class="info-table-wrap">
+                  <table class="key-value-table" id="clientNetworkTable"></table>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel" id="clientSubnetsPanel">
+              <div class="panel-header">
+                <h3>VLANs &amp; Subnets</h3>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="text-muted" style="font-size: 12px;" id="clientSubnetCount">5 subnets</span>
+                  <button class="btn btn-secondary btn-sm" id="editClientSubnetsBtn">Edit</button>
+                </div>
+              </div>
+              <div id="clientSubnetsContainer">
+                <table class="clean-list-table subnets-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 70px;">VLAN</th>
+                      <th>Name</th>
+                      <th>Subnet CIDR</th>
+                      <th>DHCP / Service</th>
+                    </tr>
+                  </thead>
+                  <tbody id="clientSubnetsTbody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h3>Client Specific Knowledge Articles</h3>
+                <button class="btn-link" id="clientJumpToKbBtn">Open KB &rarr;</button>
+              </div>
+              <div id="clientDossierKbList" class="compact-article-list"></div>
+            </div>
+          </div>
+
+          <!-- Column 2: Cloud, Security & Asset Inventory -->
+          <div class="stack">
+            <div class="panel" id="clientCloudSecPanel">
+              <div class="panel-header">
+                <h3>Cloud, Identity &amp; Cyber Security</h3>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="badge badge-teal">SOC-2 Protected</span>
+                  <button class="btn btn-secondary btn-sm" id="editClientCloudSecBtn">Edit</button>
+                </div>
+              </div>
+              <div id="clientCloudSecContainer">
+                <div class="info-table-wrap">
+                  <table class="key-value-table" id="clientCloudSecTable"></table>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel" id="clientAssetsPanel">
+              <div class="panel-header">
+                <h3>Asset &amp; Endpoint Inventory</h3>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="text-muted" id="clientTotalEndpointsBadge">Total</span>
+                  <button class="btn btn-secondary btn-sm" id="editClientAssetsBtn">Edit</button>
+                </div>
+              </div>
+              <div id="clientAssetsContainer">
+                <div class="assets-metric-row" id="clientAssetsMetrics"></div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header">
+                <h3>Client Service Tickets</h3>
+                <span class="text-muted" id="clientTicketCountBadge">0 tickets</span>
+              </div>
+              <div id="clientDossierTicketsList" class="compact-ticket-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         5. BILLING (Dedicated Center & Time Ledger)
+         ========================================== -->
+    <section class="view" id="view-billing">
+      <div class="page-header">
+        <div>
+          <h1>Billing &amp; Invoicing</h1>
+          <p class="text-muted">Track monthly retainer agreements, billable time ledger, unbilled WIP, and generate client invoices.</p>
+        </div>
+      </div>
+
+      <!-- Billing Summary Stat Cards -->
+      <div class="stats-row" id="billingStatsRow"></div>
+
+      <!-- Client Accounts Invoicing Summary -->
+      <div class="panel flush" style="margin-bottom: 24px;">
+        <div class="panel-header" style="padding: 16px 20px;">
+          <h2>Client Invoicing &amp; Retainer Accounts</h2>
+          <span class="text-muted">Review unbilled hours before invoice dispatch</span>
+        </div>
+        <table class="clean-list-table">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Primary Contact</th>
+              <th>Hourly Rate</th>
+              <th>Monthly Retainer</th>
+              <th>Unbilled Hours</th>
+              <th>Unbilled Total</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="billingClientsTbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Full Time Ledger -->
+      <div class="panel flush">
+        <div class="panel-header" style="padding: 16px 20px;">
+          <h2>Billable Time Ledger</h2>
+          <select id="ledgerClientFilter" class="select">
+            <option value="all">All Clients</option>
+          </select>
+        </div>
+        <table class="clean-list-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Ticket</th>
+              <th>Client</th>
+              <th>Tech</th>
+              <th>Work Summary</th>
+              <th>Hours</th>
+              <th>Hourly Rate</th>
+              <th>Amount</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="billingLedgerTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         6. KNOWLEDGE BASE (Client Dropdown Filter)
+         ========================================== -->
+    <section class="view" id="view-knowledge">
+      <div class="page-header">
+        <div>
+          <h1>Client Knowledge Base</h1>
+          <p class="text-muted">Technical documentation, perimeter configurations, and SOP runbooks organized per client.</p>
+        </div>
+        <button class="btn btn-primary" id="newKbArticleBtn">+ New Article</button>
+      </div>
+
+      <!-- Client Dropdown Selector Bar (As requested) -->
+      <div class="filter-bar">
+        <div class="field-inline" style="min-width: 260px;">
+          <label class="label" style="margin-bottom: 4px;">Filter by Client</label>
+          <select id="kbClientSelect" class="select full-width">
+            <option value="all">All Clients</option>
+          </select>
+        </div>
+
+        <div style="flex: 1; min-width: 260px;">
+          <label class="label" style="margin-bottom: 4px;">Search Runbooks</label>
+          <input type="text" id="kbSearchInput" class="input full-width" placeholder="Search commands, configs, or procedures..." />
+        </div>
+      </div>
+
+      <div class="kb-layout">
+        <!-- Left: List of Articles -->
+        <div class="panel flush">
+          <table class="clean-list-table">
+            <thead>
+              <tr>
+                <th>Article Title</th>
+                <th style="width: 170px;">Client</th>
+                <th style="width: 120px;">Category</th>
+              </tr>
+            </thead>
+            <tbody id="kbArticleListTbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Right: Article Reader -->
+        <div class="panel" id="kbArticleDetailContent"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL 1: NEW TICKET -->
+  <div class="modal-backdrop hidden" id="newTicketModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>New Ticket</h2>
+        <button class="modal-close" data-close-modal="newTicketModal">&times;</button>
+      </div>
+      <form id="newTicketForm" class="stack-sm">
+        <div>
+          <label class="label">Client</label>
+          <select id="newTicketClient" class="select full-width" required></select>
+        </div>
+        <div class="row-2">
+          <div>
+            <label class="label">Priority</label>
+            <select id="newTicketPriority" class="select full-width">
+              <option value="High">High</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">Category</label>
+            <select id="newTicketCategory" class="select full-width">
+              <option value="Network">Network</option>
+              <option value="Cloud / M365">Cloud / M365</option>
+              <option value="Security">Security</option>
+              <option value="Backup">Backup</option>
+              <option value="Workstation">Workstation</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="label">Subject</label>
+          <input type="text" id="newTicketSubject" class="input" placeholder="Brief summary of the issue" required />
+        </div>
+        <div>
+          <label class="label">Description</label>
+          <textarea id="newTicketDesc" class="textarea" rows="3" placeholder="Technical details, symptoms, affected users..." required></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="newTicketModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Ticket</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: MERGE TICKETS (Feature requested) -->
+  <div class="modal-backdrop hidden" id="mergeTicketModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Merge Ticket</h2>
+        <button class="modal-close" data-close-modal="mergeTicketModal">&times;</button>
+      </div>
+      <form id="mergeTicketForm" class="stack-sm">
+        <p class="text-muted" style="font-size: 13px;">
+          Merge current ticket <strong id="mergeSourceTicketId">#WZ-1048</strong> into another active ticket. Notes and billable time will be combined, and this ticket will be marked as Resolved.
+        </p>
+
+        <div>
+          <label class="label">Target Ticket to Merge Into</label>
+          <select id="mergeTargetTicketSelect" class="select full-width" required></select>
+        </div>
+
+        <div style="background: var(--surface-subtle); padding: 12px; border-radius: var(--radius); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px;">
+          <label class="checkbox-label">
+            <input type="checkbox" id="mergeCopyNotesCheck" checked />
+            <span>Copy all notes and communication history to target ticket</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="mergeCopyTimeCheck" checked />
+            <span>Transfer all billable hours to target ticket</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="mergeNotifyClientCheck" checked />
+            <span>Post note notifying client that this ticket was merged</span>
+          </label>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="mergeTicketModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Confirm Merge</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: SCHEDULE TICKET ON CALENDAR -->
+  <div class="modal-backdrop hidden" id="scheduleDispatchModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Schedule Ticket</h2>
+        <button class="modal-close" data-close-modal="scheduleDispatchModal">&times;</button>
+      </div>
+      <form id="scheduleDispatchForm" class="stack-sm">
+        <div>
+          <label class="label">Ticket</label>
+          <select id="scheduleModalTicketSelect" class="select full-width" required></select>
+        </div>
+        <div class="row-2">
+          <div>
+            <label class="label">Day</label>
+            <select id="scheduleModalDaySelect" class="select full-width">
+              <option value="2026-11-09">Mon, Nov 9</option>
+              <option value="2026-11-10">Tue, Nov 10</option>
+              <option value="2026-11-11">Wed, Nov 11</option>
+              <option value="2026-11-12">Thu, Nov 12</option>
+              <option value="2026-11-13">Fri, Nov 13</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">Start Time</label>
+            <select id="scheduleModalHourSelect" class="select full-width">
+              <option value="8">8:00 AM</option>
+              <option value="9">9:00 AM</option>
+              <option value="10">10:00 AM</option>
+              <option value="11">11:00 AM</option>
+              <option value="12">12:00 PM</option>
+              <option value="13">1:00 PM</option>
+              <option value="14">2:00 PM</option>
+              <option value="15">3:00 PM</option>
+              <option value="16">4:00 PM</option>
+            </select>
+          </div>
+        </div>
+        <div class="row-2">
+          <div>
+            <label class="label">Technician</label>
+            <select id="scheduleModalTechSelect" class="select full-width">
+              <option value="Javier M.">Javier M.</option>
+              <option value="Elena R.">Elena R.</option>
+              <option value="Marcus V.">Marcus V.</option>
+              <option value="Alex C.">Alex C.</option>
+            </select>
+          </div>
+          <div>
+            <label class="label">Duration (Hours)</label>
+            <select id="scheduleModalDurationSelect" class="select full-width">
+              <option value="1">1 Hour</option>
+              <option value="2" selected>2 Hours</option>
+              <option value="3">3 Hours</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="scheduleDispatchModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save to Calendar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 4: NEW CLIENT KNOWLEDGE ARTICLE -->
+  <div class="modal-backdrop hidden" id="newKbModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>New Client Knowledge Article</h2>
+        <button class="modal-close" data-close-modal="newKbModal">&times;</button>
+      </div>
+      <form id="newKbForm" class="stack-sm">
+        <div class="row-2">
+          <div>
+            <label class="label">Client</label>
+            <select id="newKbClient" class="select full-width" required></select>
+          </div>
+          <div>
+            <label class="label">Category</label>
+            <select id="newKbCategory" class="select full-width">
+              <option value="Network">Network</option>
+              <option value="Cloud / M365">Cloud / M365</option>
+              <option value="Security">Security</option>
+              <option value="Backup">Backup</option>
+              <option value="Workstation">Workstation</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="label">Article Title</label>
+          <input type="text" id="newKbTitle" class="input" placeholder="e.g., Perimeter Firewall & VLAN Notes" required />
+        </div>
+        <div>
+          <label class="label">Documentation / Steps</label>
+          <textarea id="newKbBody" class="textarea" rows="4" placeholder="Write client-specific instructions..." required></textarea>
+        </div>
+        <div>
+          <label class="label">CLI Commands / Script (Optional)</label>
+          <textarea id="newKbCommands" class="textarea" rows="2" placeholder="Optional commands or config snippets..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="newKbModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Article</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 5: NEW CLIENT -->
+  <div class="modal-backdrop hidden" id="newClientModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h2>Add Managed Client</h2>
+        <button class="modal-close" data-close-modal="newClientModal">&times;</button>
+      </div>
+      <form id="newClientForm" class="stack-sm">
+        <div class="row-2">
+          <div>
+            <label class="label">Client Organization Name</label>
+            <input type="text" id="newClientName" class="input" placeholder="Acme Biotech" required />
+          </div>
+          <div>
+            <label class="label">Industry</label>
+            <input type="text" id="newClientIndustry" class="input" placeholder="Biotech & Healthcare" required />
+          </div>
+        </div>
+        <div class="row-2">
+          <div>
+            <label class="label">Primary Contact Person</label>
+            <input type="text" id="newClientContact" class="input" placeholder="Full Name & Title" required />
+          </div>
+          <div>
+            <label class="label">Contact Email</label>
+            <input type="email" id="newClientEmail" class="input" placeholder="contact@acme.com" required />
+          </div>
+        </div>
+        <div class="row-2">
+          <div>
+            <label class="label">Phone</label>
+            <input type="text" id="newClientPhone" class="input" placeholder="(555) 000-0000" />
+          </div>
+          <div>
+            <label class="label">Office Address</label>
+            <input type="text" id="newClientAddress" class="input" placeholder="City, State" />
+          </div>
+        </div>
+        <div class="row-2">
+          <div>
+            <label class="label">Hourly Rate ($/hr)</label>
+            <input type="number" id="newClientRate" class="input" value="175" required />
+          </div>
+          <div>
+            <label class="label">Monthly Retainer ($ MRR)</label>
+            <input type="number" id="newClientMrr" class="input" value="7500" required />
+          </div>
+        </div>
+        <div class="row-2">
+          <div>
+            <label class="label">Primary Firewall / Gateway</label>
+            <input type="text" id="newClientFirewall" class="input" placeholder="e.g. FortiGate 200F or Meraki MX" />
+          </div>
+          <div>
+            <label class="label">M365 Domain</label>
+            <input type="text" id="newClientDomain" class="input" placeholder="acme.com" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-close-modal="newClientModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Client</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 6: INVOICE PREVIEW -->
+  <div class="modal-backdrop hidden" id="invoicePreviewModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h2 id="invoiceModalTitle">Client Invoice</h2>
+        <button class="modal-close" data-close-modal="invoicePreviewModal">&times;</button>
+      </div>
+      <div id="invoiceModalBody"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-close-modal="invoicePreviewModal">Close</button>
+        <button type="button" class="btn btn-primary" id="markInvoiceSentBtn">Send Invoice &amp; Mark Billed</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 7: FIREBASE CLOUD DATABASE & AUTH SETUP -->
+  <div class="modal-backdrop hidden" id="firebaseModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h2>Firebase Cloud Database &amp; Authentication</h2>
+        <button class="modal-close" data-close-modal="firebaseModal">&times;</button>
+      </div>
+      <div class="stack-sm">
+        <p class="text-muted" style="font-size: 13px;">
+          Connect your Google Firebase project to enable Firestore cloud database synchronization and technician login across all devices.
+        </p>
+
+        <div style="background: var(--surface-subtle); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-size: 12.5px; line-height: 1.6;">
+          <strong>Free Firebase Setup Guide (3 minutes):</strong>
+          <ol style="margin-left: 20px; margin-top: 4px;">
+            <li>Go to <a href="https://console.firebase.google.com" target="_blank" rel="noopener" style="color: var(--primary); font-weight: 600;">console.firebase.google.com</a> and create or open your project.</li>
+            <li>In <strong>Project Settings &gt; General</strong>, scroll down, click Web (<code>&lt;/&gt;</code>) to register an app, and copy the <code>firebaseConfig</code> object.</li>
+            <li>In <strong>Build &gt; Authentication &gt; Sign-in method</strong>, enable the <strong>Email/Password</strong> provider.</li>
+            <li>In <strong>Build &gt; Firestore Database</strong>, click <strong>Create Database</strong> (choose Test Mode or add security rules).</li>
+          </ol>
+        </div>
+
+        <div>
+          <label class="label">Paste Firebase Web Config (JSON or JavaScript snippet)</label>
+          <textarea id="firebaseConfigPasteInput" class="textarea" rows="4" placeholder='const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "your-project.firebaseapp.com",
+  projectId: "your-project",
+  storageBucket: "your-project.appspot.com",
+  messagingSenderId: "1234567890",
+  appId: "1:1234567890:web:abcdef..."
+};'></textarea>
+        </div>
+
+        <div class="row-2">
+          <div>
+            <label class="label">API Key</label>
+            <input type="text" id="fbApiKeyInput" class="input full-width" placeholder="AIzaSy..." />
+          </div>
+          <div>
+            <label class="label">Project ID</label>
+            <input type="text" id="fbProjectIdInput" class="input full-width" placeholder="workflowzero-psa" />
+          </div>
+        </div>
+
+        <div class="row-2">
+          <div>
+            <label class="label">Auth Domain</label>
+            <input type="text" id="fbAuthDomainInput" class="input full-width" placeholder="project.firebaseapp.com" />
+          </div>
+          <div>
+            <label class="label">Storage Bucket</label>
+            <input type="text" id="fbStorageBucketInput" class="input full-width" placeholder="project.appspot.com" />
+          </div>
+        </div>
+
+        <div id="fbSetupFeedback" style="font-size: 13px; font-weight: 500; display: none; padding: 8px 12px; border-radius: var(--radius);"></div>
+
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <button type="button" class="btn btn-secondary" id="fbResetBtn" style="color: var(--danger);">Disconnect / Reset</button>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-secondary" data-close-modal="firebaseModal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="fbSaveBtn">Save &amp; Connect Cloud</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTHENTICATION SCREEN (LOGIN & TECHNICIAN REGISTER) -->
+  <div class="auth-screen hidden" id="authScreen">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <img src="logo.png" alt="Workflow Zero IT Logo" class="auth-logo-img" />
+        <h1 class="auth-title">Workflow Zero <span class="brand-accent">IT</span></h1>
+        <p class="auth-subtitle">Cloud-Connected PSA Client &amp; Service Portal</p>
+      </div>
+
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="auth-tab-btn active" id="authTabSignIn">Sign In</button>
+        <button type="button" class="auth-tab-btn" id="authTabRegister">Register Technician</button>
+      </div>
+
+      <div id="authErrorMessage" class="auth-error"></div>
+
+      <form id="authForm" class="stack-sm">
+        <div id="authNameGroup" class="hidden">
+          <label class="label">Technician Full Name</label>
+          <input type="text" id="authNameInput" class="input full-width" placeholder="Javier Mendez — Lead Tech" />
+        </div>
+
+        <div>
+          <label class="label">Email Address</label>
+          <input type="email" id="authEmailInput" class="input full-width" placeholder="technician@workflowzero.it" required />
+        </div>
+
+        <div>
+          <label class="label">Password</label>
+          <input type="password" id="authPasswordInput" class="input full-width" placeholder="••••••••" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary full-width" id="authSubmitBtn" style="margin-top: 8px; padding: 10px;">Sign In to PSA</button>
+      </form>
+
+      <div class="auth-footer">
+        <div class="auth-cloud-badge" id="authCloudSettingsLink" title="Click to configure Firebase">
+          <span class="cloud-status-dot setup" id="authCloudDot"></span>
+          <span id="authCloudStatusText">Firebase: Configure Cloud Database</span>
+        </div>
+        <button type="button" class="btn-link" id="authQuickDemoBtn" style="font-size: 12px;">Continue with Offline / Local Demo Account &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Google Firebase SDK (v10 compat CDN) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

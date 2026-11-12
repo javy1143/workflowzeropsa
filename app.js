@@ -2470,11 +2470,43 @@
     handleHashRoute();
     window.addEventListener('hashchange', handleHashRoute);
 
-    // Cloud Sync & Authentication Listener
+    // Continuous cloud data synchronization across all devices
+    if (typeof startCloudSync === 'function') {
+      startCloudSync(remoteData => {
+        if (remoteData && typeof remoteData === 'object') {
+          // Reconcile and apply remote updates
+          state.clients = Array.isArray(remoteData.clients) ? remoteData.clients : [];
+          state.tickets = Array.isArray(remoteData.tickets) ? remoteData.tickets : [];
+          state.timeEntries = Array.isArray(remoteData.timeEntries) ? remoteData.timeEntries : [];
+          state.kbArticles = Array.isArray(remoteData.kbArticles) ? remoteData.kbArticles : [];
+
+          // Preserve selected ticket and client if they exist in state
+          if (selectedTicketId && !state.tickets.some(t => t.id === selectedTicketId)) {
+            selectedTicketId = state.tickets[0]?.id || null;
+          }
+          if (selectedClientId && !state.clients.some(c => c.id === selectedClientId)) {
+            selectedClientId = state.clients[0]?.id || null;
+          }
+          if (selectedKbId && !state.kbArticles.some(k => k.id === selectedKbId)) {
+            selectedKbId = state.kbArticles[0]?.id || null;
+          }
+
+          renderAll();
+
+          // If currently in a ticket or client detail view, refresh that view too
+          if (activeTab === 'tickets' && selectedTicketId) {
+            renderTicketDetail(selectedTicketId);
+          } else if (activeTab === 'clients' && selectedClientId) {
+            renderClientProfile(selectedClientId);
+          }
+        }
+      });
+    }
+
+    // Cloud Authentication Listener
     if (window.FirebaseService) {
       window.FirebaseService.onAuthStateChanged(user => {
         const authScreen = document.getElementById('authScreen');
-        const isReady = window.FirebaseService.isCloudReady();
 
         if (user) {
           authScreen?.classList.add('hidden');
@@ -2488,25 +2520,6 @@
           if (avatarEl) {
             const initials = name.split(' ').map(s => s[0]).join('').slice(0, 2).toUpperCase();
             avatarEl.textContent = initials || 'WZ';
-          }
-
-          // Hydrate cloud state if ready
-          if (isReady) {
-            window.FirebaseService.loadStateFromCloud().then(cloudState => {
-              if (cloudState && (cloudState.clients?.length > 0 || cloudState.tickets?.length > 0)) {
-                state = cloudState;
-                savePsaState(state);
-                renderAll();
-              }
-            });
-
-            window.FirebaseService.subscribeToCloudState(cloudState => {
-              if (cloudState) {
-                state = cloudState;
-                savePsaState(state);
-                renderAll();
-              }
-            });
           }
         } else {
           authScreen?.classList.remove('hidden');

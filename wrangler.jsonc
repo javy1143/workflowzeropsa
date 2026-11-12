@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "workflowzero-psa",
+  "main": "worker.js",
   "compatibility_date": "2026-11-10",
   "observability": {
     "enabled": true
@@ -10,6 +11,12 @@
     "not_found_handling": "single-page-application",
     "html_handling": "auto-trailing-slash"
   },
+  "kv_namespaces": [
+    {
+      "binding": "PSA_DATABASE",
+      "id": "406b83aa7ab448a490b455749532cf8e"
+    }
+  ],
   "routes": [
     {
       "pattern": "psa.workflowzeroit.com",

@@ -281,7 +281,7 @@
   }
 
   function isCloudReady() {
-    return Boolean(firestoreInstance && isConfigured() && currentAuthUser);
+    return Boolean(firestoreInstance && isConfigured());
   }
 
   async function syncStateToCloud(state) {
@@ -290,40 +290,54 @@
     try {
       const docRef = firestoreInstance.collection('psa_workspaces').doc('default_msp');
       const cleanPayload = {
-        clients: state.clients || [],
-        tickets: state.tickets || [],
-        timeEntries: state.timeEntries || [],
-        kbArticles: state.kbArticles || [],
+        clients: Array.isArray(state.clients) ? JSON.parse(JSON.stringify(state.clients)) : [],
+        tickets: Array.isArray(state.tickets) ? JSON.parse(JSON.stringify(state.tickets)) : [],
+        timeEntries: Array.isArray(state.timeEntries) ? JSON.parse(JSON.stringify(state.timeEntries)) : [],
+        kbArticles: Array.isArray(state.kbArticles) ? JSON.parse(JSON.stringify(state.kbArticles)) : [],
         lastUpdatedBy: currentAuthUser?.email || 'technician',
+        lastUpdatedEpoch: Date.now(),
         lastUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
       };
 
       await docRef.set(cleanPayload, { merge: true });
 
-      // Also sync individual documents for queryability
-      const batch = firestoreInstance.batch();
+      // Also sync individual documents for queryability if available
+      try {
+        const batch = firestoreInstance.batch();
 
-      (state.clients || []).forEach(c => {
-        const ref = firestoreInstance.collection('clients').doc(c.id);
-        batch.set(ref, c, { merge: true });
-      });
+        (cleanPayload.clients || []).forEach(c => {
+          if (c && c.id) {
+            const ref = firestoreInstance.collection('clients').doc(String(c.id));
+            batch.set(ref, c, { merge: true });
+          }
+        });
 
-      (state.tickets || []).forEach(t => {
-        const ref = firestoreInstance.collection('tickets').doc(t.id);
-        batch.set(ref, t, { merge: true });
-      });
+        (cleanPayload.tickets || []).forEach(t => {
+          if (t && t.id) {
+            const ref = firestoreInstance.collection('tickets').doc(String(t.id));
+            batch.set(ref, t, { merge: true });
+          }
+        });
 
-      (state.timeEntries || []).forEach(te => {
-        const ref = firestoreInstance.collection('timeEntries').doc(te.id);
-        batch.set(ref, te, { merge: true });
-      });
+        (cleanPayload.timeEntries || []).forEach(te => {
+          if (te && te.id) {
+            const ref = firestoreInstance.collection('timeEntries').doc(String(te.id));
+            batch.set(ref, te, { merge: true });
+          }
+        });
 
-      (state.kbArticles || []).forEach(kb => {
-        const ref = firestoreInstance.collection('kbArticles').doc(kb.id);
-        batch.set(ref, kb, { merge: true });
-      });
+        (cleanPayload.kbArticles || []).forEach(kb => {
+          if (kb && kb.id) {
+            const ref = firestoreInstance.collection('kbArticles').doc(String(kb.id));
+            batch.set(ref, kb, { merge: true });
+          }
+        });
 
-      await batch.commit();
+        await batch.commit();
+      } catch (batchErr) {
+        console.warn('Batch document write non-fatal warning:', batchErr);
+      }
+
       return true;
     } catch (err) {
       console.error('Error syncing state to Firestore:', err);
@@ -340,28 +354,41 @@
 
       if (snap.exists) {
         const data = snap.data();
+        if (data && (Array.isArray(data.clients) || Array.isArray(data.tickets) || Array.isArray(data.timeEntries) || Array.isArray(data.kbArticles))) {
+          return {
+            clients: Array.isArray(data.clients) ? data.clients : [],
+            tickets: Array.isArray(data.tickets) ? data.tickets : [],
+            timeEntries: Array.isArray(data.timeEntries) ? data.timeEntries : [],
+            kbArticles: Array.isArray(data.kbArticles) ? data.kbArticles : [],
+            lastUpdatedEpoch: Number(data.lastUpdatedEpoch || 0)
+          };
+        }
+      }
+
+      // Fallback: Query individual collections if main doc is empty
+      const [cSnap, tSnap, teSnap, kbSnap] = await Promise.all([
+        firestoreInstance.collection('clients').get().catch(() => ({ docs: [] })),
+        firestoreInstance.collection('tickets').get().catch(() => ({ docs: [] })),
+        firestoreInstance.collection('timeEntries').get().catch(() => ({ docs: [] })),
+        firestoreInstance.collection('kbArticles').get().catch(() => ({ docs: [] }))
+      ]);
+
+      const cDocs = cSnap.docs ? cSnap.docs.map(d => d.data()) : [];
+      const tDocs = tSnap.docs ? tSnap.docs.map(d => d.data()) : [];
+      const teDocs = teSnap.docs ? teSnap.docs.map(d => d.data()) : [];
+      const kbDocs = kbSnap.docs ? kbSnap.docs.map(d => d.data()) : [];
+
+      if (cDocs.length > 0 || tDocs.length > 0 || teDocs.length > 0 || kbDocs.length > 0) {
         return {
-          clients: Array.isArray(data.clients) ? data.clients : [],
-          tickets: Array.isArray(data.tickets) ? data.tickets : [],
-          timeEntries: Array.isArray(data.timeEntries) ? data.timeEntries : [],
-          kbArticles: Array.isArray(data.kbArticles) ? data.kbArticles : []
+          clients: cDocs,
+          tickets: tDocs,
+          timeEntries: teDocs,
+          kbArticles: kbDocs,
+          lastUpdatedEpoch: Date.now()
         };
       }
 
-      // If main document doesn't exist yet, query individual collections
-      const [cSnap, tSnap, teSnap, kbSnap] = await Promise.all([
-        firestoreInstance.collection('clients').get(),
-        firestoreInstance.collection('tickets').get(),
-        firestoreInstance.collection('timeEntries').get(),
-        firestoreInstance.collection('kbArticles').get()
-      ]);
-
-      return {
-        clients: cSnap.docs.map(d => d.data()),
-        tickets: tSnap.docs.map(d => d.data()),
-        timeEntries: teSnap.docs.map(d => d.data()),
-        kbArticles: kbSnap.docs.map(d => d.data())
-      };
+      return null;
     } catch (err) {
       console.error('Error loading state from Firestore:', err);
       return null;
@@ -386,7 +413,8 @@
               clients: Array.isArray(data.clients) ? data.clients : [],
               tickets: Array.isArray(data.tickets) ? data.tickets : [],
               timeEntries: Array.isArray(data.timeEntries) ? data.timeEntries : [],
-              kbArticles: Array.isArray(data.kbArticles) ? data.kbArticles : []
+              kbArticles: Array.isArray(data.kbArticles) ? data.kbArticles : [],
+              lastUpdatedEpoch: Number(data.lastUpdatedEpoch || 0)
             };
             if (typeof onUpdate === 'function') {
               onUpdate(cloudState);

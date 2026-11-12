@@ -15,8 +15,57 @@ const MIME_TYPES = {
   '.ico': 'image/x-icon'
 };
 
+let localState = {
+  clients: [],
+  tickets: [],
+  timeEntries: [],
+  kbArticles: []
+};
+
 const server = http.createServer((req, res) => {
   const safeUrl = req.url.split('?')[0];
+
+  if (safeUrl === '/api/state') {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    if (req.method === 'GET') {
+      res.writeHead(200);
+      res.end(JSON.stringify(localState));
+      return;
+    }
+
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const parsed = JSON.parse(body);
+          localState = {
+            clients: Array.isArray(parsed.clients) ? parsed.clients : [],
+            tickets: Array.isArray(parsed.tickets) ? parsed.tickets : [],
+            timeEntries: Array.isArray(parsed.timeEntries) ? parsed.timeEntries : [],
+            kbArticles: Array.isArray(parsed.kbArticles) ? parsed.kbArticles : []
+          };
+          res.writeHead(200);
+          res.end(JSON.stringify({ success: true, count: localState.clients.length }));
+        } catch (e) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      });
+      return;
+    }
+  }
+
   const relPath = safeUrl === '/' ? 'index.html' : safeUrl.replace(/^\/+/, '');
   const filePath = path.join(ROOT, relPath);
 

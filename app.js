@@ -14,7 +14,7 @@
 
   let ticketFilter = {
     search: '',
-    status: 'all',
+    status: 'active',
     clientId: 'all',
     sortBy: 'updated'
   };
@@ -63,15 +63,28 @@
   // =========================================================================
 
   function getClientById(clientId) {
-    return state.clients.find(c => c.id === clientId) || {
-      id: 'unknown',
+    if (!clientId) {
+      return state.clients[0] || {
+        id: 'unknown',
+        name: 'Unknown Client',
+        industry: 'General Enterprise',
+        contactName: 'Client Contact',
+        contactEmail: 'contact@client.com',
+        phone: '—',
+        mrr: 0,
+        hourlyRate: 0,
+        slaTier: 'Standard Managed'
+      };
+    }
+    return state.clients.find(c => String(c.id) === String(clientId)) || {
+      id: clientId,
       name: 'Unknown Client',
       industry: 'General Enterprise',
       contactName: 'Client Contact',
       contactEmail: 'contact@client.com',
       phone: '—',
-      mrr: 5000,
-      hourlyRate: 175,
+      mrr: 0,
+      hourlyRate: 0,
       slaTier: 'Standard Managed'
     };
   }
@@ -200,6 +213,7 @@
 
   window.switchTab = switchTab;
   window.openClientProfile = openClientProfile;
+  window.openEditClientModal = openEditClientModal;
 
   function openTicketDetail(ticketId) {
     if (window.location.hash !== `#ticket/${ticketId}`) {
@@ -483,6 +497,24 @@
     const tbody = document.getElementById('fullTicketQueueTbody');
     if (!tbody) return;
 
+    // Update status counter badges
+    const activeCount = state.tickets.filter(t => t.status !== 'Resolved').length;
+    const openCount = state.tickets.filter(t => t.status === 'Open').length;
+    const progressCount = state.tickets.filter(t => t.status === 'In Progress').length;
+    const waitingCount = state.tickets.filter(t => t.status === 'Waiting').length;
+    const resolvedCount = state.tickets.filter(t => t.status === 'Resolved').length;
+
+    const elActive = document.getElementById('countActiveTickets');
+    const elOpen = document.getElementById('countOpenTickets');
+    const elProg = document.getElementById('countProgressTickets');
+    const elWait = document.getElementById('countWaitingTickets');
+    const elRes = document.getElementById('countResolvedTickets');
+    if (elActive) elActive.textContent = activeCount;
+    if (elOpen) elOpen.textContent = openCount;
+    if (elProg) elProg.textContent = progressCount;
+    if (elWait) elWait.textContent = waitingCount;
+    if (elRes) elRes.textContent = resolvedCount;
+
     let filtered = state.tickets.filter(t => {
       const client = getClientById(t.clientId);
       const q = ticketFilter.search.trim().toLowerCase();
@@ -490,7 +522,15 @@
         const hay = `${t.id} ${t.subject} ${client.name} ${t.assignedTech}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
-      if (ticketFilter.status !== 'all' && t.status !== ticketFilter.status) return false;
+      if (ticketFilter.status === 'active' || ticketFilter.status === 'all') {
+        // Resolved tickets fall off by default
+        if (t.status === 'Resolved') return false;
+      } else if (ticketFilter.status === 'Resolved') {
+        // Resolved tab: show only resolved tickets
+        if (t.status !== 'Resolved') return false;
+      } else if (ticketFilter.status) {
+        if (t.status !== ticketFilter.status) return false;
+      }
       if (ticketFilter.clientId !== 'all' && t.clientId !== ticketFilter.clientId) return false;
       return true;
     });
@@ -514,14 +554,15 @@
     });
 
     if (filtered.length === 0) {
+      const isResolvedTab = ticketFilter.status === 'Resolved';
       tbody.innerHTML = `
         <tr>
           <td colspan="9" style="text-align: center; padding: 48px 20px;">
             <div class="empty-state">
-              <div class="empty-icon">📥</div>
-              <div class="empty-title">No Service Tickets Found</div>
-              <div class="empty-desc">Create your first ticket to begin tracking issues, technician time, and client updates.</div>
-              <button class="btn btn-primary btn-sm" id="emptyQueueNewTicketBtn">+ Create Ticket</button>
+              <div class="empty-icon">${isResolvedTab ? '✅' : '📥'}</div>
+              <div class="empty-title">${isResolvedTab ? 'No Resolved Tickets' : 'No Active Tickets'}</div>
+              <div class="empty-desc">${isResolvedTab ? 'Closed and resolved service tickets will appear here for archival and audit lookup.' : 'Your active service queue is clear. Click below to create a service ticket.'}</div>
+              ${!isResolvedTab ? '<button class="btn btn-primary btn-sm" id="emptyQueueNewTicketBtn">+ Create Ticket</button>' : ''}
             </div>
           </td>
         </tr>
@@ -819,11 +860,39 @@
           <td style="font-family: var(--font-mono); font-weight: 600;">$${(c.mrr || 7500).toLocaleString()}/mo</td>
           <td style="text-align: right;" onclick="event.stopPropagation();">
             <button class="btn btn-secondary btn-sm" data-open-client="${escapeHtml(c.id)}">View Profile</button>
+            <button class="btn btn-secondary btn-sm" data-edit-client="${escapeHtml(c.id)}">Edit</button>
             <button class="btn btn-secondary btn-sm" data-new-ticket-for="${escapeHtml(c.id)}">+ Ticket</button>
           </td>
         </tr>
       `;
     }).join('');
+  }
+
+  function openEditClientModal(clientId) {
+    const client = state.clients.find(c => String(c.id) === String(clientId)) || getClientById(clientId);
+    if (!client || client.id === 'unknown') return;
+
+    selectedClientId = client.id;
+    const setVal = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val ?? '';
+    };
+
+    setVal('editClientId', client.id);
+    setVal('editClientNameInput', client.name || '');
+    setVal('editClientIndustryInput', client.industry || '');
+    setVal('editClientContactInput', client.contactName || (client.primaryContact && client.primaryContact.name) || '');
+    setVal('editClientEmailInput', client.contactEmail || (client.primaryContact && client.primaryContact.email) || '');
+    setVal('editClientPhoneInput', client.phone || (client.primaryContact && client.primaryContact.phone) || '');
+    setVal('editClientAddressInput', client.address || '');
+    setVal('editClientRateInput', client.hourlyRate ?? '');
+    setVal('editClientMrrInput', client.mrr ?? '');
+    setVal('editClientSlaTierInput', client.slaTier || '');
+    setVal('editClientRenewalInput', client.contractRenewal || '');
+    setVal('editClientFirewallInput', (client.network && client.network.firewall) || '');
+    setVal('editClientDomainInput', (client.cloudAndSecurity && client.cloudAndSecurity.m365Domain) || '');
+
+    openModal('editClientModal');
   }
 
   function renderClientHero(client) {
@@ -1717,6 +1786,13 @@
         return;
       }
 
+      const editClientBtn = e.target.closest('[data-edit-client]');
+      if (editClientBtn) {
+        e.stopPropagation();
+        openEditClientModal(editClientBtn.dataset.editClient);
+        return;
+      }
+
       const closeBtn = e.target.closest('[data-close-modal]');
       if (closeBtn) {
         closeModal(closeBtn.dataset.closeModal);
@@ -1727,9 +1803,13 @@
       // CLIENT CARD EDIT TRIGGERS (Editable MSP Dossier)
       // =========================================================================
       if (e.target.closest('#editClientHeroBtn')) {
-        clientCardEditState.hero = true;
         const c = getClientById(selectedClientId);
-        if (c) renderClientHero(c);
+        if (c && c.id !== 'unknown') {
+          openEditClientModal(c.id);
+        } else {
+          clientCardEditState.hero = true;
+          if (c) renderClientHero(c);
+        }
         return;
       }
       if (e.target.closest('#cancelHeroEditBtn')) {
@@ -2008,6 +2088,67 @@
     });
 
     // Client Profile Quick Actions
+    document.getElementById('editClientProfileBtn')?.addEventListener('click', () => {
+      if (selectedClientId) {
+        openEditClientModal(selectedClientId);
+      }
+    });
+
+    // Form submit handler for Edit Client Modal
+    document.getElementById('editClientForm')?.addEventListener('submit', e => {
+      e.preventDefault();
+      const id = document.getElementById('editClientId')?.value;
+      const client = state.clients.find(c => String(c.id) === String(id));
+      if (!client) return;
+
+      const newName = document.getElementById('editClientNameInput')?.value.trim() || client.name;
+      const newIndustry = document.getElementById('editClientIndustryInput')?.value.trim() || '';
+      const newContact = document.getElementById('editClientContactInput')?.value.trim() || '';
+      const newEmail = document.getElementById('editClientEmailInput')?.value.trim() || '';
+      const newPhone = document.getElementById('editClientPhoneInput')?.value.trim() || '';
+      const newAddress = document.getElementById('editClientAddressInput')?.value.trim() || '';
+      const newRate = Number(document.getElementById('editClientRateInput')?.value) || 0;
+      const newMrr = Number(document.getElementById('editClientMrrInput')?.value) || 0;
+      const newSla = document.getElementById('editClientSlaTierInput')?.value || '';
+      const newRenewal = document.getElementById('editClientRenewalInput')?.value.trim() || '';
+      const newFirewall = document.getElementById('editClientFirewallInput')?.value.trim() || '';
+      const newDomain = document.getElementById('editClientDomainInput')?.value.trim() || '';
+
+      client.name = newName;
+      client.industry = newIndustry;
+      client.contactName = newContact;
+      client.contactEmail = newEmail;
+      client.phone = newPhone;
+      client.address = newAddress;
+      client.hourlyRate = newRate;
+      client.mrr = newMrr;
+      client.slaTier = newSla;
+      client.contractRenewal = newRenewal;
+
+      if (!client.primaryContact) client.primaryContact = {};
+      client.primaryContact.name = newContact;
+      client.primaryContact.email = newEmail;
+      client.primaryContact.phone = newPhone;
+
+      if (!client.network) client.network = {};
+      client.network.firewall = newFirewall;
+
+      if (!client.cloudAndSecurity) client.cloudAndSecurity = {};
+      client.cloudAndSecurity.m365Domain = newDomain;
+
+      // Also sync clientName on any existing tickets
+      state.tickets.forEach(t => {
+        if (String(t.clientId) === String(client.id)) {
+          t.clientName = newName;
+        }
+      });
+
+      savePsaState(state);
+      closeModal('editClientModal');
+      renderAll();
+      showToast(`Client "${client.name}" updated successfully.`);
+    });
+
     document.getElementById('clientProfileNewTicketBtn')?.addEventListener('click', () => {
       openModal('newTicketModal');
       document.getElementById('newTicketClient').value = selectedClientId;
@@ -2481,13 +2622,13 @@
           state.kbArticles = Array.isArray(remoteData.kbArticles) ? remoteData.kbArticles : [];
 
           // Preserve selected ticket and client if they exist in state
-          if (selectedTicketId && !state.tickets.some(t => t.id === selectedTicketId)) {
+          if (!selectedTicketId || !state.tickets.some(t => t.id === selectedTicketId)) {
             selectedTicketId = state.tickets[0]?.id || null;
           }
-          if (selectedClientId && !state.clients.some(c => c.id === selectedClientId)) {
+          if (!selectedClientId || !state.clients.some(c => c.id === selectedClientId)) {
             selectedClientId = state.clients[0]?.id || null;
           }
-          if (selectedKbId && !state.kbArticles.some(k => k.id === selectedKbId)) {
+          if (!selectedKbId || !state.kbArticles.some(k => k.id === selectedKbId)) {
             selectedKbId = state.kbArticles[0]?.id || null;
           }
 
@@ -2530,6 +2671,7 @@
 
   window.switchTab = switchTab;
   window.openClientProfile = openClientProfile;
+  window.openEditClientModal = openEditClientModal;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);

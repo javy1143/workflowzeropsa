@@ -18,12 +18,12 @@ let isSyncInProgress = false;
 
 function computeStateHash(data) {
   try {
-    const clientsCount = Array.isArray(data.clients) ? data.clients.length : 0;
-    const ticketsCount = Array.isArray(data.tickets) ? data.tickets.length : 0;
-    const timeCount = Array.isArray(data.timeEntries) ? data.timeEntries.length : 0;
-    const kbCount = Array.isArray(data.kbArticles) ? data.kbArticles.length : 0;
-    const sample = (data.tickets && data.tickets[0]?.updatedEpoch) || '';
-    return `${clientsCount}_${ticketsCount}_${timeCount}_${kbCount}_${sample}`;
+    if (!data) return '';
+    const clientsSig = (data.clients || []).map(c => `${c.id}:${c.name}:${c.mrr}:${c.contactEmail}`).join('|');
+    const ticketsSig = (data.tickets || []).map(t => `${t.id}:${t.status}:${t.updatedEpoch || t.updatedAt}`).join('|');
+    const timeSig = (data.timeEntries || []).length;
+    const kbSig = (data.kbArticles || []).length;
+    return `${clientsSig}__${ticketsSig}__${timeSig}__${kbSig}`;
   } catch (e) {
     return String(Date.now());
   }

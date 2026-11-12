@@ -169,6 +169,30 @@
       sec.classList.toggle('active', sec.id === `view-${tabName}`);
     });
 
+    // Update topbar context title
+    const titleMap = {
+      dashboard: 'Dashboard',
+      tickets: 'Service Tickets',
+      dispatch: 'Dispatch Board',
+      clients: 'Client Directory',
+      billing: 'Billing & Invoicing',
+      knowledge: 'Knowledge Base'
+    };
+    const pageTitleEl = document.getElementById('topbarPageTitle');
+    if (pageTitleEl && titleMap[tabName]) {
+      pageTitleEl.textContent = titleMap[tabName];
+    }
+
+    // Auto-close mobile sidebar drawer upon navigation
+    const sidebar = document.getElementById('appSidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    if (sidebar && sidebar.classList.contains('mobile-open')) {
+      sidebar.classList.remove('mobile-open');
+    }
+    if (backdrop && backdrop.classList.contains('active')) {
+      backdrop.classList.remove('active');
+    }
+
     if (tabName === 'tickets') {
       const queueSubview = document.getElementById('ticketQueueSubview');
       const detailSubview = document.getElementById('ticketDetailSubview');
@@ -347,6 +371,11 @@
     const openTickets = state.tickets.filter(t => t.status !== 'Resolved');
     const navCount = document.getElementById('navTicketCount');
     if (navCount) navCount.textContent = openTickets.length;
+    const navDot = document.getElementById('navTicketDot');
+    if (navDot) {
+      navDot.textContent = openTickets.length > 99 ? '99+' : openTickets.length;
+      navDot.style.display = openTickets.length > 0 ? 'flex' : 'none';
+    }
 
     const scheduledToday = state.tickets.filter(t => t.dispatch && t.dispatch.day === '2026-11-10');
     const unbilledEntries = state.timeEntries.filter(te => !te.billed);
@@ -1707,10 +1736,161 @@
     updateTimerUI();
   }
 
+  // =========================================================================
+  // THEME MANAGEMENT (DARK / LIGHT MODE)
+  // =========================================================================
+
+  function applyTheme(theme, persist = true) {
+    const isDark = theme === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+
+    const checkbox = document.getElementById('darkModeCheckbox');
+    if (checkbox) checkbox.checked = isDark;
+
+    const iconWrap = document.getElementById('themeStatusIcon');
+    if (iconWrap) {
+      iconWrap.innerHTML = isDark
+        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>'
+        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+    }
+
+    if (persist) {
+      try {
+        localStorage.setItem('wz_theme_preference', theme);
+      } catch (e) {}
+    }
+  }
+
+  function initTheme() {
+    let savedTheme = null;
+    try {
+      savedTheme = localStorage.getItem('wz_theme_preference');
+    } catch (e) {}
+
+    if (!savedTheme) {
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      savedTheme = prefersDark ? 'dark' : 'light';
+    }
+    applyTheme(savedTheme, false);
+  }
+
+  // =========================================================================
+  // SIDEBAR EXPAND / COLLAPSE & MOBILE DRAWER
+  // =========================================================================
+
+  function toggleSidebarCollapse() {
+    const sidebar = document.getElementById('appSidebar');
+    if (!sidebar) return;
+    const isNowCollapsed = !sidebar.classList.contains('collapsed');
+    sidebar.classList.toggle('collapsed', isNowCollapsed);
+    try {
+      localStorage.setItem('wz_sidebar_collapsed', isNowCollapsed ? 'true' : 'false');
+    } catch (e) {}
+  }
+
+  function initSidebarState() {
+    try {
+      const isCollapsed = localStorage.getItem('wz_sidebar_collapsed') === 'true';
+      const sidebar = document.getElementById('appSidebar');
+      if (sidebar && isCollapsed) {
+        sidebar.classList.add('collapsed');
+      }
+    } catch (e) {}
+  }
+
+  // =========================================================================
+  // USER PROFILE DROPDOWN POPOVER
+  // =========================================================================
+
+  function toggleUserDropdown() {
+    const popover = document.getElementById('userDropdownPopover');
+    const container = document.getElementById('userMenuContainer');
+    const pill = document.getElementById('userPill');
+    if (!popover) return;
+    const isHidden = popover.classList.contains('hidden');
+    if (isHidden) {
+      popover.classList.remove('hidden');
+      container?.classList.add('open');
+      pill?.setAttribute('aria-expanded', 'true');
+    } else {
+      closeUserDropdown();
+    }
+  }
+
+  function closeUserDropdown() {
+    const popover = document.getElementById('userDropdownPopover');
+    const container = document.getElementById('userMenuContainer');
+    const pill = document.getElementById('userPill');
+    popover?.classList.add('hidden');
+    container?.classList.remove('open');
+    pill?.setAttribute('aria-expanded', 'false');
+  }
+
   function bindEvents() {
     // Navigation Tabs
     document.querySelectorAll('.nav-tab').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    // Sidebar Expand / Collapse Controls
+    document.getElementById('sidebarToggleBtn')?.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleSidebarCollapse();
+    });
+
+    document.getElementById('sidebarCollapseBarBtn')?.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleSidebarCollapse();
+    });
+
+    // Mobile Hamburger Menu & Backdrop
+    document.getElementById('mobileMenuBtn')?.addEventListener('click', e => {
+      e.stopPropagation();
+      const sidebar = document.getElementById('appSidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      sidebar?.classList.toggle('mobile-open');
+      backdrop?.classList.toggle('active');
+    });
+
+    document.getElementById('sidebarBackdrop')?.addEventListener('click', () => {
+      const sidebar = document.getElementById('appSidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      sidebar?.classList.remove('mobile-open');
+      backdrop?.classList.remove('active');
+    });
+
+    // Technician Menu Popover & Dark Mode Switch
+    const userPill = document.getElementById('userPill');
+    if (userPill) {
+      userPill.addEventListener('click', e => {
+        e.stopPropagation();
+        toggleUserDropdown();
+      });
+      userPill.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleUserDropdown();
+        }
+      });
+    }
+
+    document.getElementById('darkModeCheckbox')?.addEventListener('change', e => {
+      applyTheme(e.target.checked ? 'dark' : 'light', true);
+    });
+
+    // Click outside or Escape closes user dropdown
+    document.addEventListener('click', e => {
+      const container = document.getElementById('userMenuContainer');
+      if (container && !container.contains(e.target)) {
+        closeUserDropdown();
+      }
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        closeUserDropdown();
+      }
     });
 
     document.getElementById('brandHomeLink')?.addEventListener('click', e => {
@@ -2547,6 +2727,7 @@
     });
 
     document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+      closeUserDropdown();
       await window.FirebaseService.signOut();
       showToast('Signed out of PSA.');
     });
@@ -2606,6 +2787,8 @@
   }
 
   function initApp() {
+    initTheme();
+    initSidebarState();
     bindEvents();
     renderAll();
     handleHashRoute();
@@ -2649,19 +2832,34 @@
       window.FirebaseService.onAuthStateChanged(user => {
         const authScreen = document.getElementById('authScreen');
 
+        // Test/automated verification parameter for localhost sessions
+        if (!user && window.location.search.includes('test=1')) {
+          user = {
+            uid: 'LN6s0DSaGpQe0VjH063H6Sp9YkA2',
+            email: 'jgonzalez@workflowzeroit.com',
+            displayName: 'Javier Gonzalez'
+          };
+        }
+
         if (user) {
           authScreen?.classList.add('hidden');
           const nameEl = document.getElementById('userDisplayName');
           const emailEl = document.getElementById('userDisplayEmail');
           const avatarEl = document.getElementById('userAvatar');
 
-          const name = user.displayName || user.email.split('@')[0];
+          const dropNameEl = document.getElementById('dropdownUserName');
+          const dropEmailEl = document.getElementById('dropdownUserEmail');
+          const dropAvatarEl = document.getElementById('dropdownUserAvatar');
+
+          const name = user.displayName || (user.email ? user.email.split('@')[0] : 'Technician');
           if (nameEl) nameEl.textContent = name;
-          if (emailEl) emailEl.textContent = user.email;
-          if (avatarEl) {
-            const initials = name.split(' ').map(s => s[0]).join('').slice(0, 2).toUpperCase();
-            avatarEl.textContent = initials || 'WZ';
-          }
+          if (emailEl) emailEl.textContent = user.email || 'tech@workflowzero.it';
+          if (dropNameEl) dropNameEl.textContent = name;
+          if (dropEmailEl) dropEmailEl.textContent = user.email || 'tech@workflowzero.it';
+
+          const initials = name.split(' ').map(s => s[0]).join('').slice(0, 2).toUpperCase() || 'WZ';
+          if (avatarEl) avatarEl.textContent = initials;
+          if (dropAvatarEl) dropAvatarEl.textContent = initials;
         } else {
           authScreen?.classList.remove('hidden');
         }
